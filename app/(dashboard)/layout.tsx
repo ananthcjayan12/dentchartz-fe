@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { TopNavbar } from "@/components/layout/TopNavbar";
+import { UserNav } from "@/components/layout/UserNav";
 
 export default function DashboardLayout({
   children,
@@ -8,21 +7,14 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      
-      {/* Main content */}
-      <div className="md:pl-64 flex flex-col flex-1">
-        {/* Top navigation */}
-        <TopNavbar />
-
-        <main className="flex-1 overflow-y-auto">
-          <div className="py-8">
-            <div className="max-w-7xl mx-auto px-6 sm:px-8 md:px-10">
-              {children}
-            </div>
-          </div>
+      <div className="flex-1">
+        <header className="h-16 border-b bg-white flex items-center justify-end px-6">
+          <UserNav />
+        </header>
+        <main className="p-6">
+          {children}
         </main>
       </div>
     </div>

@@ -28,7 +28,7 @@ type NavItem = {
 const navItems: NavItem[] = [
   {
     title: "Dashboard",
-    href: "/dashboard",
+    href: "/",
     icon: <LayoutDashboard className="h-5 w-5" />,
   },
   {
@@ -108,7 +108,7 @@ export function Sidebar({ userRole = "staff" }: { userRole?: string }) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="h-16 flex items-center justify-center border-b border-gray-200">
-            <Link href="/dashboard" className="text-xl font-bold text-indigo-600">
+            <Link href="/" className="text-xl font-bold text-indigo-600">
               DentChartzz
             </Link>
           </div>
