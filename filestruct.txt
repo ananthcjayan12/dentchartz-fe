@@ -1,0 +1,43 @@
+.
+├── app
+│   ├── favicon.ico
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx
+├── lib
+│   └── utils.ts
+├── templates
+│   └── app
+│       ├── partials
+│       │   └── payment_card.html
+│       ├── appointment_calendar.html
+│       ├── appointment_cancel.html
+│       ├── appointment_detail.html
+│       ├── appointment_form.html
+│       ├── appointment_list.html
+│       ├── appointment_status_update.html
+│       ├── base.html
+│       ├── dashboard.html
+│       ├── dental_chart.html
+│       ├── login.html
+│       ├── patient_detail.html
+│       ├── patient_form.html
+│       ├── patient_form_ajax.html
+│       ├── patient_list.html
+│       ├── payment_detail.html
+│       ├── payment_form.html
+│       ├── payment_list.html
+│       ├── treatment_detail.html
+│       └── treatment_update.html
+├── components.json
+├── eslint.config.mjs
+├── filestruct.txt
+├── frontend_development_plan.md
+├── next-env.d.ts
+├── next.config.ts
+├── package-lock.json
+├── package.json
+├── postcss.config.mjs
+└── tsconfig.json
+
+6 directories, 35 files

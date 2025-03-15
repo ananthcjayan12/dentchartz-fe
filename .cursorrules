@@ -1,0 +1,47 @@
+# Server-Side Rendering
+- Prioritize server components over client components whenever possible
+- Minimize 'use client' directives to leverage Next.js SSR capabilities
+- Use server actions for data mutations instead of client-side API calls
+- Implement proper data fetching patterns with Next.js data fetching methods
+
+# Component Guidelines
+- Always create reusable components in the components directory
+- Use shadcn/ui components as the foundation for UI elements
+- Install required shadcn components before creating custom ones
+- Ask before building any custom components not available in shadcn
+
+# Code Structure
+- Follow TypeScript best practices with proper typing
+- Use React hooks for state management only when client-side interactivity is required
+- Implement context for global state (auth, theme, etc.)
+- Create service files for API interactions
+
+# File Organization
+- Place page components in the app directory following Next.js app router conventions
+- Group related components in subdirectories (e.g., components/forms, components/layout)
+- Use barrel exports (index.ts) for cleaner imports
+- Keep utility functions in utils directory
+
+# Styling
+- Use Tailwind CSS for styling with consistent class naming
+- Follow mobile-first responsive design principles
+- Maintain consistent spacing and layout patterns
+- Use CSS variables for theming
+
+# Performance
+- Leverage server components for improved performance and reduced client-side JavaScript
+- Implement proper code splitting and lazy loading
+- Use Next.js Image component for optimized images
+- Implement proper caching strategies
+
+# Accessibility
+- Ensure all components meet WCAG standards
+- Use semantic HTML elements
+- Include proper aria attributes
+- Ensure keyboard navigation works correctly
+
+# Error Handling
+- Implement proper error boundaries
+- Use toast notifications for user feedback
+- Handle API errors gracefully
+- Provide fallback UI for loading states
