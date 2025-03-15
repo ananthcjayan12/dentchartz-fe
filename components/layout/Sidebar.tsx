@@ -22,6 +22,7 @@ type NavItem = {
   href: string;
   icon: React.ReactNode;
   adminOnly?: boolean;
+  current?: boolean;
 };
 
 const navItems: NavItem[] = [
@@ -49,6 +50,7 @@ const navItems: NavItem[] = [
     title: "Payments",
     href: "/payments",
     icon: <CreditCard className="h-5 w-5" />,
+    current: true,
   },
   {
     title: "Reports",

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Edit, Trash2, Calendar, Phone, Mail, MapPin, Clock, User } from "lucide-react";
 import { ToothIcon } from "@/components/icons/ToothIcon";
 import { toast } from "sonner";
+import { PatientPaymentCard } from "@/components/payments/PatientPaymentCard";
 
 export default function PatientDetailsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -206,6 +207,10 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
             <p className="text-gray-500 text-center py-6">No treatment history available</p>
           </CardContent>
         </Card>
+      </div>
+
+      <div className="mt-6">
+        <PatientPaymentCard patient={patient} />
       </div>
     </div>
   );
