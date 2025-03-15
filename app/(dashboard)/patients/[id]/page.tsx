@@ -7,6 +7,7 @@ import { patientService, Patient } from "@/services/patient.service";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Edit, Trash2, Calendar, Phone, Mail, MapPin, Clock, User } from "lucide-react";
+import { ToothIcon } from "@/components/icons/ToothIcon";
 import { toast } from "sonner";
 
 export default function PatientDetailsPage({ params }: { params: { id: string } }) {
@@ -93,6 +94,12 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
             <Trash2 className="mr-2 h-4 w-4" />
             Delete
           </Button>
+          <Button variant="outline" asChild>
+            <Link href={`/patients/${patient.id}/dental-chart`}>
+              <ToothIcon className="mr-2 h-4 w-4" />
+              Dental Chart
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -164,7 +171,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
             <div>
               <h3 className="text-sm font-medium text-gray-500">Patient Since</h3>
               <p className="mt-1 text-base text-gray-900 flex items-center">
-                <Clock className="mr-2 h-4 w-4 text-gray-400" />
+                <Calendar className="mr-2 h-4 w-4 text-gray-400" />
                 {new Date(patient.created_at).toLocaleDateString()}
               </p>
             </div>

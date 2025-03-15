@@ -121,3 +121,19 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Dental Chart Grid */
+.grid-cols-16 {
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+}
+
+.tooth-container {
+  aspect-ratio: 1;
+  padding: 2px;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.tooth-container:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}

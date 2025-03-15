@@ -191,6 +191,26 @@ export const patientService = {
         Authorization: `Bearer ${localStorage.getItem("accessToken")}`
       }
     });
+  },
+
+  async getPatients(): Promise<Patient[]> {
+    if (USE_MOCK_DATA) {
+      return Object.values(MOCK_PATIENTS);
+    }
+    
+    try {
+      const response = await axios.get(`${API_URL}/patients/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`
+        }
+      });
+      
+      // Ensure we return an array
+      return Array.isArray(response.data) ? response.data : [];
+    } catch (error) {
+      console.error("Error fetching patients:", error);
+      return [];
+    }
   }
 };
 
