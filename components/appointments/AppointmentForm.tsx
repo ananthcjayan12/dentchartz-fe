@@ -81,7 +81,7 @@ export function AppointmentForm({ appointment, onSuccess }: AppointmentFormProps
   const fetchData = async () => {
     try {
       const [patientsData, doctorsData] = await Promise.all([
-        patientService.getPatients(),
+        patientService.getAllPatients(),
         doctorService.getDoctors()
       ]);
       
