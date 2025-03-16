@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { patientService, Patient } from "@/services/patient.service";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Edit, Trash2, Calendar, Phone, Mail, MapPin, Clock, User } from "lucide-react";
@@ -13,17 +14,28 @@ import { PatientPaymentCard } from "@/components/payments/PatientPaymentCard";
 
 export default function PatientDetailsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const { currentClinic } = useAuth();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const patientId = params.id;
 
   useEffect(() => {
     fetchPatient();
-  }, [params.id]);
+  }, [patientId]);
 
   const fetchPatient = async () => {
+    if (!currentClinic?.id) {
+      toast.error("No clinic selected. Please select a clinic first.");
+      router.push("/");
+      return;
+    }
+    
     setIsLoading(true);
     try {
-      const data = await patientService.getPatient(params.id);
+      const data = await patientService.getPatient(
+        currentClinic.id.toString(),
+        patientId
+      );
       setPatient(data);
     } catch (error) {
       console.error("Error fetching patient:", error);
@@ -35,11 +47,14 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
   };
 
   const handleDelete = async () => {
-    if (!patient) return;
+    if (!patient || !currentClinic?.id) return;
     
-    if (confirm(`Are you sure you want to delete ${patient.first_name} ${patient.last_name}?`)) {
+    if (confirm(`Are you sure you want to delete ${patient.name}?`)) {
       try {
-        await patientService.deletePatient(patient.id);
+        await patientService.deletePatient(
+          currentClinic.id.toString(),
+          patient.id
+        );
         toast.success("Patient deleted successfully");
         router.push("/patients");
       } catch (error) {
@@ -48,6 +63,26 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
       }
     }
   };
+
+  if (!currentClinic?.id) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-semibold text-gray-900">Patient Details</h1>
+          <p className="mt-1 text-gray-500">View and manage patient information</p>
+        </div>
+        
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <p className="text-gray-500 mb-4">Please select a clinic to view patient details</p>
+            <Button onClick={() => router.push("/")}>
+              Go to Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -79,7 +114,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
           </Button>
           <div>
             <h1 className="text-3xl font-semibold text-gray-900">
-              {patient.first_name} {patient.last_name}
+              {patient.name}
             </h1>
             <p className="mt-1 text-sm text-gray-500">Patient ID: {patient.id}</p>
           </div>
@@ -104,39 +139,33 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Personal Information */}
-        <Card className="md:col-span-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Patient Information */}
+        <Card>
           <CardHeader>
-            <CardTitle>Personal Information</CardTitle>
+            <CardTitle>Patient Information</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-sm font-medium text-gray-500">Full Name</h3>
                 <p className="mt-1 text-base text-gray-900 flex items-center">
                   <User className="mr-2 h-4 w-4 text-gray-400" />
-                  {patient.first_name} {patient.last_name}
+                  {patient.name}
                 </p>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-500">Date of Birth</h3>
-                <p className="mt-1 text-base text-gray-900 flex items-center">
-                  <Calendar className="mr-2 h-4 w-4 text-gray-400" />
-                  {patient.date_of_birth ? new Date(patient.date_of_birth).toLocaleDateString() : "Not provided"}
+                <h3 className="text-sm font-medium text-gray-500">Age</h3>
+                <p className="mt-1 text-base text-gray-900">
+                  {patient.age || "Not specified"}
                 </p>
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-500">Gender</h3>
-                <p className="mt-1 text-base text-gray-900 capitalize">
-                  {patient.gender || "Not provided"}
-                </p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Email</h3>
-                <p className="mt-1 text-base text-gray-900 flex items-center">
-                  <Mail className="mr-2 h-4 w-4 text-gray-400" />
-                  {patient.email || "Not provided"}
+                <p className="mt-1 text-base text-gray-900">
+                  {patient.gender === "M" ? "Male" : 
+                   patient.gender === "F" ? "Female" : 
+                   patient.gender === "O" ? "Other" : "Not specified"}
                 </p>
               </div>
               <div>
@@ -147,9 +176,16 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                 </p>
               </div>
               <div>
+                <h3 className="text-sm font-medium text-gray-500">Email</h3>
+                <p className="mt-1 text-base text-gray-900 flex items-center">
+                  <Mail className="mr-2 h-4 w-4 text-gray-400" />
+                  {patient.email || "Not provided"}
+                </p>
+              </div>
+              <div>
                 <h3 className="text-sm font-medium text-gray-500">Address</h3>
                 <p className="mt-1 text-base text-gray-900 flex items-start">
-                  <MapPin className="mr-2 h-4 w-4 text-gray-400 mt-1 flex-shrink-0" />
+                  <MapPin className="mr-2 h-4 w-4 text-gray-400 mt-1" />
                   <span>{patient.address || "Not provided"}</span>
                 </p>
               </div>
@@ -164,9 +200,27 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
+              <h3 className="text-sm font-medium text-gray-500">Chief Complaint</h3>
+              <p className="mt-1 text-base text-gray-900">
+                {patient.chief_complaint || "No chief complaint recorded"}
+              </p>
+            </div>
+            <div>
               <h3 className="text-sm font-medium text-gray-500">Medical History</h3>
               <p className="mt-1 text-base text-gray-900">
                 {patient.medical_history || "No medical history recorded"}
+              </p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Drug Allergies</h3>
+              <p className="mt-1 text-base text-gray-900">
+                {patient.drug_allergies || "No drug allergies recorded"}
+              </p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Previous Dental Work</h3>
+              <p className="mt-1 text-base text-gray-900">
+                {patient.previous_dental_work || "No previous dental work recorded"}
               </p>
             </div>
             <div>

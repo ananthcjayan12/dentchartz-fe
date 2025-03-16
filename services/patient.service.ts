@@ -1,18 +1,21 @@
-import axios from "axios";
+import { apiGet, apiPost, apiPatch, apiDelete } from "./api.utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
 
 export interface Patient {
   id: string;
-  first_name: string;
-  last_name: string;
-  email?: string;
+  name: string;
+  age?: number;
+  gender?: 'M' | 'F' | 'O';
   phone?: string;
-  date_of_birth?: string;
-  gender?: 'male' | 'female' | 'other';
+  email?: string;
   address?: string;
+  chief_complaint?: string;
   medical_history?: string;
+  drug_allergies?: string;
+  previous_dental_work?: string;
   created_at: string;
   updated_at: string;
 }
@@ -237,151 +240,62 @@ const MOCK_PATIENTS: Record<string, Patient> = {
   }
 };
 
-export const patientService = {
-  async getPatients(page = 1, limit = 10, search = ""): Promise<{ data: Patient[], total: number }> {
-    if (USE_MOCK_DATA) {
-      // Get all patients as an array
-      const allPatients = Object.values(MOCK_PATIENTS);
-      
-      // Filter by search query if provided
-      const filteredPatients = search 
-        ? allPatients.filter(patient => 
-            patient.first_name.toLowerCase().includes(search.toLowerCase()) ||
-            patient.last_name.toLowerCase().includes(search.toLowerCase()) ||
-            patient.email?.toLowerCase().includes(search.toLowerCase()) ||
-            patient.phone?.includes(search)
-          )
-        : allPatients;
-      
-      // Calculate pagination
-      const startIndex = (page - 1) * limit;
-      const endIndex = startIndex + limit;
-      const paginatedPatients = filteredPatients.slice(startIndex, endIndex);
-      
-      return {
-        data: paginatedPatients,
-        total: filteredPatients.length
-      };
-    }
-    
-    try {
-      const response = await axios.get(`${API_URL}/patients/`, {
-        params: { page, limit, search },
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`
-        }
-      });
-      
-      // Ensure we return an array for data
-      return {
-        data: Array.isArray(response.data.data) ? response.data.data : [],
-        total: response.data.total || 0
-      };
-    } catch (error) {
-      console.error("Error fetching patients:", error);
-      return { data: [], total: 0 };
-    }
-  },
-  
-  async getPatient(id: string): Promise<Patient> {
-    if (USE_MOCK_DATA) {
-      const patient = MOCK_PATIENTS[id];
-      if (!patient) {
-        throw new Error("Patient not found");
-      }
-      return patient;
-    }
-    
-    const response = await axios.get(`${API_URL}/patients/${id}/`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`
-      }
-    });
-    
-    return response.data;
-  },
-  
-  async createPatient(patientData: Omit<Patient, 'id' | 'created_at' | 'updated_at'>): Promise<Patient> {
-    if (USE_MOCK_DATA) {
-      const newPatient: Patient = {
-        id: (Object.keys(MOCK_PATIENTS).length + 1).toString(),
-        ...patientData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      MOCK_PATIENTS[newPatient.id] = newPatient;
-      
-      return newPatient;
-    }
-    
-    const response = await axios.post(`${API_URL}/patients/`, patientData, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`
-      }
-    });
-    
-    return response.data;
-  },
-  
-  async updatePatient(id: string, patientData: Partial<Omit<Patient, 'id' | 'created_at' | 'updated_at'>>): Promise<Patient> {
-    if (USE_MOCK_DATA) {
-      const patient = MOCK_PATIENTS[id];
-      if (!patient) {
-        throw new Error("Patient not found");
-      }
-      
-      const updatedPatient: Patient = {
-        ...patient,
-        ...patientData,
-        updated_at: new Date().toISOString()
-      };
-      
-      MOCK_PATIENTS[id] = updatedPatient;
-      
-      return updatedPatient;
-    }
-    
-    const response = await axios.patch(`${API_URL}/patients/${id}/`, patientData, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`
-      }
-    });
-    
-    return response.data;
-  },
-  
-  async deletePatient(id: string): Promise<void> {
-    if (USE_MOCK_DATA) {
-      delete MOCK_PATIENTS[id];
-      return;
-    }
-    
-    await axios.delete(`${API_URL}/patients/${id}/`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`
-      }
-    });
-  },
+export interface PatientListResponse {
+  results: Patient[];
+  count: number;
+  next: string | null;
+  previous: string | null;
+}
 
-  async getAllPatients(): Promise<Patient[]> {
-    if (USE_MOCK_DATA) {
-      return Object.values(MOCK_PATIENTS);
+export const patientService = {
+  // Get all patients with pagination and search
+  getPatients: async (
+    clinicId: string,
+    page = 1,
+    search = "",
+    limit = 10
+  ): Promise<PatientListResponse> => {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (search) {
+      queryParams.append("search", search);
     }
     
-    try {
-      const response = await axios.get(`${API_URL}/patients/all/`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`
-        }
-      });
-      
-      // Ensure we return an array
-      return Array.isArray(response.data) ? response.data : [];
-    } catch (error) {
-      console.error("Error fetching all patients:", error);
-      return [];
-    }
+    return apiGet(`/clinics/${clinicId}/patients/?${queryParams.toString()}`);
+  },
+  
+  // Get a single patient by ID
+  getPatient: async (clinicId: string, patientId: string): Promise<Patient> => {
+    return apiGet(`/clinics/${clinicId}/patients/${patientId}/`);
+  },
+  
+  // Create a new patient
+  createPatient: async (clinicId: string, patientData: Omit<Patient, "id" | "created_at" | "updated_at">): Promise<Patient> => {
+    return apiPost(`/clinics/${clinicId}/patients/`, patientData);
+  },
+  
+  // Update an existing patient
+  updatePatient: async (clinicId: string, patientId: string, patientData: Partial<Patient>): Promise<Patient> => {
+    return apiPatch(`/clinics/${clinicId}/patients/${patientId}/`, patientData);
+  },
+  
+  // Delete a patient
+  deletePatient: async (clinicId: string, patientId: string): Promise<void> => {
+    return apiDelete(`/clinics/${clinicId}/patients/${patientId}/`);
+  },
+  
+  // Search patients
+  searchPatients: async (clinicId: string, query: string): Promise<Patient[]> => {
+    const queryParams = new URLSearchParams({
+      search: query,
+      limit: "5", // Limit results for autocomplete
+    });
+    
+    const response = await apiGet(`/clinics/${clinicId}/patients/?${queryParams.toString()}`);
+    return response.results;
   }
 };
 

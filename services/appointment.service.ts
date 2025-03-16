@@ -1,325 +1,228 @@
-import axios from "axios";
-import { Patient } from "./patient.service";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
+import { apiGet, apiPost, apiPatch, apiDelete } from "./api.utils";
+import { Patient } from "@/services/patient.service";
 
 export interface Appointment {
   id: string;
-  patient_id: string;
-  patient?: Patient;
-  doctor_id: string;
-  doctor_name?: string;
+  patient: {
+    id: number | string;
+    name: string;
+    age?: number;
+    gender?: string;
+    phone?: string;
+    email?: string;
+  } | string | number;
+  patient_name?: string;
+  dentist: {
+    id: number | string;
+    username: string;
+    full_name: string;
+    email?: string;
+  } | string | number;
+  dentist_name?: string;
   date: string;
-  time: string;
-  duration: number; // in minutes
-  status: 'scheduled' | 'completed' | 'cancelled' | 'no-show';
-  type: 'check-up' | 'cleaning' | 'filling' | 'extraction' | 'root-canal' | 'other';
+  start_time: string;
+  end_time: string;
+  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
+  status_display?: string;
+  duration_minutes?: number;
+  reason?: string;
   notes?: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
-// Mock data for testing
-const MOCK_APPOINTMENTS: Appointment[] = [
-  {
-    id: "1",
-    patient_id: "1",
-    doctor_id: "1",
-    doctor_name: "Dr. Sarah Johnson",
-    date: "2023-07-15",
-    time: "09:00",
-    duration: 30,
-    status: "completed",
-    type: "check-up",
-    notes: "Regular check-up, no issues found",
-    created_at: "2023-07-01T10:30:00Z",
-    updated_at: "2023-07-15T09:30:00Z"
-  },
-  {
-    id: "2",
-    patient_id: "2",
-    doctor_id: "1",
-    doctor_name: "Dr. Sarah Johnson",
-    date: "2023-07-16",
-    time: "10:30",
-    duration: 60,
-    status: "completed",
-    type: "filling",
-    notes: "Filled cavity on lower right molar",
-    created_at: "2023-07-02T14:15:00Z",
-    updated_at: "2023-07-16T11:30:00Z"
-  },
-  {
-    id: "3",
-    patient_id: "3",
-    doctor_id: "2",
-    doctor_name: "Dr. Michael Chen",
-    date: "2023-07-17",
-    time: "14:00",
-    duration: 45,
-    status: "cancelled",
-    type: "extraction",
-    notes: "Patient cancelled due to illness",
-    created_at: "2023-07-03T09:45:00Z",
-    updated_at: "2023-07-16T08:30:00Z"
-  },
-  {
-    id: "4",
-    patient_id: "4",
-    doctor_id: "2",
-    doctor_name: "Dr. Michael Chen",
-    date: "2023-07-18",
-    time: "11:15",
-    duration: 30,
-    status: "scheduled",
-    type: "check-up",
-    notes: "First visit for new patient",
-    created_at: "2023-07-10T11:20:00Z",
-    updated_at: "2023-07-10T11:20:00Z"
-  },
-  {
-    id: "5",
-    patient_id: "5",
-    doctor_id: "1",
-    doctor_name: "Dr. Sarah Johnson",
-    date: new Date().toISOString().split('T')[0], // Today
-    time: "15:45",
-    duration: 60,
-    status: "scheduled",
-    type: "root-canal",
-    notes: "Patient reported severe pain",
-    created_at: "2023-07-12T13:10:00Z",
-    updated_at: "2023-07-12T13:10:00Z"
-  }
-];
+export interface TimeSlot {
+  time: string;
+  available: boolean;
+  selected?: boolean;
+  patient_name?: string;
+  appointment_id?: string;
+}
 
-// Mock doctors for testing
-export interface Doctor {
+export interface AppointmentListResponse {
+  results: Appointment[];
+  count: number;
+  next: string | null;
+  previous: string | null;
+}
+
+export interface Dentist {
   id: string;
-  name: string;
-  specialization: string;
+  username: string;
+  first_name: string;
+  last_name: string;
+  email: string;
 }
 
-const MOCK_DOCTORS: Doctor[] = [
-  {
-    id: "1",
-    name: "Dr. Sarah Johnson",
-    specialization: "General Dentistry"
-  },
-  {
-    id: "2",
-    name: "Dr. Michael Chen",
-    specialization: "Orthodontics"
-  },
-  {
-    id: "3",
-    name: "Dr. Emily Rodriguez",
-    specialization: "Pediatric Dentistry"
-  }
-];
+export interface DentistListResponse {
+  results: Dentist[];
+  count: number;
+  next: string | null;
+  previous: string | null;
+}
 
 export const appointmentService = {
-  async getAppointments(
+  // Get all appointments with pagination and filtering
+  getAppointments: async (
+    clinicId: string, 
     page = 1, 
-    limit = 10, 
     filters: { 
-      patientId?: string, 
-      doctorId?: string, 
-      status?: string, 
-      date?: string,
-      search?: string
-    } = {}
-  ): Promise<{ data: Appointment[], total: number }> {
-    if (USE_MOCK_DATA) {
-      // Filter appointments based on criteria
-      let filteredAppointments = [...MOCK_APPOINTMENTS];
-      
-      if (filters.patientId) {
-        filteredAppointments = filteredAppointments.filter(a => a.patient_id === filters.patientId);
-      }
-      
-      if (filters.doctorId) {
-        filteredAppointments = filteredAppointments.filter(a => a.doctor_id === filters.doctorId);
-      }
-      
-      if (filters.status) {
-        filteredAppointments = filteredAppointments.filter(a => a.status === filters.status);
-      }
-      
-      if (filters.date) {
-        filteredAppointments = filteredAppointments.filter(a => a.date === filters.date);
-      }
-      
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        filteredAppointments = filteredAppointments.filter(a => {
-          const doctor = MOCK_DOCTORS.find(d => d.id === a.doctor_id);
-          return doctor?.name.toLowerCase().includes(searchLower) || 
-                 a.type.toLowerCase().includes(searchLower) ||
-                 a.notes?.toLowerCase().includes(searchLower);
-        });
-      }
-      
-      // Sort by date and time (most recent first)
-      filteredAppointments.sort((a, b) => {
-        const dateA = new Date(`${a.date}T${a.time}`);
-        const dateB = new Date(`${b.date}T${b.time}`);
-        return dateB.getTime() - dateA.getTime();
-      });
-      
-      // Paginate results
-      const startIndex = (page - 1) * limit;
-      const paginatedAppointments = filteredAppointments.slice(startIndex, startIndex + limit);
-      
-      return {
-        data: paginatedAppointments,
-        total: filteredAppointments.length
-      };
-    }
+      date?: string;
+      start_date?: string;
+      end_date?: string;
+      patient_id?: string;
+      dentist_id?: string;
+      status?: string;
+      search?: string;
+    } = {},
+    limit = 10
+  ): Promise<AppointmentListResponse> => {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...filters
+    }).toString();
     
-    const response = await axios.get(`${API_URL}/appointments/`, {
-      params: { 
-        page, 
-        limit, 
-        patient_id: filters.patientId,
-        doctor_id: filters.doctorId,
-        status: filters.status,
-        date: filters.date,
-        search: filters.search
-      },
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`
-      }
-    });
-    
-    return response.data;
+    return apiGet(`/clinics/${clinicId}/appointments/?${queryParams}`);
   },
   
-  async getAppointment(id: string): Promise<Appointment> {
-    if (USE_MOCK_DATA) {
-      const appointment = MOCK_APPOINTMENTS.find(a => a.id === id);
-      if (!appointment) {
-        throw new Error("Appointment not found");
-      }
-      return appointment;
-    }
-    
-    const response = await axios.get(`${API_URL}/appointments/${id}/`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`
-      }
-    });
-    
-    return response.data;
+  // Get a single appointment by ID
+  getAppointment: async (clinicId: string, appointmentId: string): Promise<Appointment> => {
+    return apiGet(`/clinics/${clinicId}/appointments/${appointmentId}/`);
   },
   
-  async createAppointment(appointmentData: Omit<Appointment, 'id' | 'created_at' | 'updated_at'>): Promise<Appointment> {
-    if (USE_MOCK_DATA) {
-      const newAppointment: Appointment = {
-        id: (MOCK_APPOINTMENTS.length + 1).toString(),
-        ...appointmentData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      return newAppointment;
+  // Create a new appointment
+  createAppointment: async (
+    clinicId: string,
+    appointmentData: {
+      patient_id: string;
+      dentist_id: string;
+      date: string;
+      start_time: string;
+      end_time: string;
+      reason?: string;
+      notes?: string;
     }
-    
-    const response = await axios.post(`${API_URL}/appointments/`, appointmentData, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`
-      }
-    });
-    
-    return response.data;
+  ): Promise<Appointment> => {
+    return apiPost(`/clinics/${clinicId}/appointments/`, appointmentData);
   },
   
-  async updateAppointment(id: string, appointmentData: Partial<Omit<Appointment, 'id' | 'created_at' | 'updated_at'>>): Promise<Appointment> {
-    if (USE_MOCK_DATA) {
-      const appointmentIndex = MOCK_APPOINTMENTS.findIndex(a => a.id === id);
-      if (appointmentIndex === -1) {
-        throw new Error("Appointment not found");
-      }
-      
-      const updatedAppointment: Appointment = {
-        ...MOCK_APPOINTMENTS[appointmentIndex],
-        ...appointmentData,
-        updated_at: new Date().toISOString()
-      };
-      
-      return updatedAppointment;
-    }
-    
-    const response = await axios.patch(`${API_URL}/appointments/${id}/`, appointmentData, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`
-      }
-    });
-    
-    return response.data;
+  // Update an existing appointment
+  updateAppointment: async (
+    clinicId: string,
+    appointmentId: string, 
+    appointmentData: Partial<{
+      date: string;
+      start_time: string;
+      end_time: string;
+      reason: string;
+      notes: string;
+    }>
+  ): Promise<Appointment> => {
+    return apiPatch(`/clinics/${clinicId}/appointments/${appointmentId}/`, appointmentData);
   },
   
-  async deleteAppointment(id: string): Promise<void> {
-    if (USE_MOCK_DATA) {
-      return;
-    }
-    
-    await axios.delete(`${API_URL}/appointments/${id}/`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`
-      }
-    });
+  // Cancel an appointment
+  cancelAppointment: async (
+    clinicId: string,
+    appointmentId: string
+  ): Promise<Appointment> => {
+    return apiPost(`/clinics/${clinicId}/appointments/${appointmentId}/cancel/`);
   },
   
-  async getDoctors(): Promise<Doctor[]> {
-    if (USE_MOCK_DATA) {
-      return MOCK_DOCTORS;
-    }
-    
-    const response = await axios.get(`${API_URL}/doctors/`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`
-      }
-    });
-    
-    return response.data;
+  // Update appointment status
+  updateAppointmentStatus: async (
+    clinicId: string,
+    appointmentId: string,
+    status: 'scheduled' | 'completed' | 'cancelled' | 'no_show'
+  ): Promise<Appointment> => {
+    return apiPost(`/clinics/${clinicId}/appointments/${appointmentId}/update_status/`, { status });
   },
   
-  async getTodaysAppointments(): Promise<Appointment[]> {
-    if (USE_MOCK_DATA) {
-      const today = new Date().toISOString().split('T')[0];
-      return MOCK_APPOINTMENTS.filter(a => a.date === today && a.status === 'scheduled');
-    }
-    
-    const response = await axios.get(`${API_URL}/appointments/today/`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`
-      }
-    });
-    
-    return response.data;
+  // Delete an appointment
+  deleteAppointment: async (clinicId: string, appointmentId: string): Promise<void> => {
+    return apiDelete(`/clinics/${clinicId}/appointments/${appointmentId}/`);
   },
   
-  async getAppointmentsByDoctorAndDate(doctorId: string, date: string): Promise<Appointment[]> {
-    if (USE_MOCK_DATA) {
-      return Object.values(MOCK_APPOINTMENTS)
-        .filter(appointment => 
-          appointment.doctor_id === doctorId && 
-          appointment.date.startsWith(date)
-        );
+  // Get available time slots for a specific date and dentist
+  getAvailableTimeSlots: async (
+    clinicId: string,
+    date: string,
+    dentistId: string,
+    selectedTime?: string
+  ): Promise<TimeSlot[]> => {
+    const queryParams = new URLSearchParams({
+      dentist: dentistId,
+      date: date
+    });
+    
+    if (selectedTime) {
+      queryParams.append('selected_time', selectedTime);
     }
     
-    const response = await axios.get(
-      `${API_URL}/appointments/doctor/${doctorId}/date/${date}/`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`
-        }
-      }
-    );
+    const response = await apiGet(`/clinics/${clinicId}/time-slots/?${queryParams.toString()}`);
+    return response.time_slots.map((slot: any) => ({
+      time: slot.time,
+      available: slot.available,
+      selected: slot.selected || false,
+      patient_name: slot.patient_name,
+      appointment_id: slot.appointment_id
+    }));
+  },
+  
+  // Get appointments for a specific patient
+  getPatientAppointments: async (
+    clinicId: string,
+    patientId: string,
+    page = 1,
+    limit = 10
+  ): Promise<AppointmentListResponse> => {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      patient_id: patientId
+    }).toString();
     
-    return response.data;
+    return apiGet(`/clinics/${clinicId}/appointments/?${queryParams}`);
+  },
+  
+  // Get all patients for appointment form
+  getPatients: async (
+    clinicId: string,
+    search = "",
+    limit = 10
+  ): Promise<Patient[]> => {
+    const queryParams = new URLSearchParams({
+      search,
+      limit: limit.toString()
+    }).toString();
+    
+    const response = await apiGet(`/clinics/${clinicId}/patients/?${queryParams}`);
+    return response.results;
+  },
+  
+  // Get all dentists for appointment form
+  getDentists: async (
+    clinicId: string
+  ): Promise<Dentist[]> => {
+    const response = await apiGet(`/clinics/${clinicId}/dentists/`);
+    return response.results;
+  },
+  
+  // Search patients for autocomplete
+  searchPatients: async (
+    clinicId: string,
+    query: string
+  ): Promise<Patient[]> => {
+    if (!query) return [];
+    
+    const queryParams = new URLSearchParams({
+      search: query,
+      limit: "5" // Limit results for autocomplete
+    }).toString();
+    
+    const response = await apiGet(`/clinics/${clinicId}/patients/?${queryParams}`);
+    return response.results;
   }
 };
 
