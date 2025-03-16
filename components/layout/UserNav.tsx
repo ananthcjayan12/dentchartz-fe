@@ -30,8 +30,15 @@ export function UserNav() {
     router.push("/login");
   };
   
-  const userInitials = user?.name 
-    ? user.name.split(" ").map(n => n[0]).join("").toUpperCase()
+  // Use full_name if available, or construct from first_name and last_name, or use username
+  const displayName = user?.full_name || 
+    (user?.first_name || user?.last_name ? 
+      `${user.first_name || ''} ${user.last_name || ''}`.trim() : 
+      user?.username || "User");
+  
+  // Generate initials from the display name
+  const userInitials = displayName !== "User" 
+    ? displayName.split(" ").map(n => n[0]).join("").toUpperCase()
     : "U";
   
   return (
@@ -39,7 +46,7 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-10 w-10">
-            <AvatarImage src="/placeholder-avatar.jpg" alt={user?.name || "User"} />
+            <AvatarImage src="/placeholder-avatar.jpg" alt={displayName} />
             <AvatarFallback>{userInitials}</AvatarFallback>
           </Avatar>
         </Button>
@@ -47,8 +54,8 @@ export function UserNav() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user?.name || "User"}</p>
-            <p className="text-xs leading-none text-gray-500">{user?.email || ""}</p>
+            <p className="text-sm font-medium leading-none">{displayName}</p>
+            <p className="text-xs leading-none text-gray-500">{user?.email || user?.username || ""}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

@@ -6,8 +6,29 @@ import { authService, LoginCredentials, AuthResponse } from "@/services/auth.ser
 import { toast } from "sonner";
 import Cookies from "js-cookie";
 
-// Define types for our context
-type User = AuthResponse["user"];
+// Define types for our context based on the actual API response
+type User = {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+};
+
+type Clinic = {
+  id: number;
+  name: string;
+  // Add other clinic fields as needed
+};
+
+type AuthResponse = {
+  access: string;
+  refresh: string;
+  user: User;
+  clinics: Clinic[];
+  current_clinic: Clinic | null;
+};
 
 type AuthContextType = {
   user: User | null;
@@ -16,6 +37,9 @@ type AuthContextType = {
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   error: string | null;
+  clinics: Clinic[];
+  currentClinic: Clinic | null;
+  setCurrentClinic: (clinic: Clinic) => void;
 };
 
 // Create the context

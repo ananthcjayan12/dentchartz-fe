@@ -42,11 +42,6 @@ const navItems: NavItem[] = [
     icon: <Calendar className="h-5 w-5" />,
   },
   {
-    title: "Treatments",
-    href: "/treatments",
-    icon: <ClipboardList className="h-5 w-5" />,
-  },
-  {
     title: "Payments",
     href: "/payments",
     icon: <CreditCard className="h-5 w-5" />,

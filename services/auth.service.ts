@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 // For testing purposes - set this to true to use mock data
 const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
@@ -57,38 +57,50 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+}
+
+export interface Clinic {
+  id: number;
+  name: string;
+  // Add other clinic fields as needed
+}
+
 export interface AuthResponse {
   access: string;
   refresh: string;
-  user: {
-    id: string;
-    username: string;
-    email: string;
-    first_name?: string;
-    last_name?: string;
-    role?: string;
-  };
+  user: User;
+  clinics: Clinic[];
+  current_clinic: Clinic | null;
 }
 
-// Mock data for testing
-const MOCK_USER = {
-  id: "1",
-  username: "testuser",
-  email: "test@example.com",
-  first_name: "Test",
+// Mock user for development
+const MOCK_USER: User = {
+  id: 1,
+  username: "admin",
+  email: "admin@example.com",
+  first_name: "Admin",
   last_name: "User",
-  role: "admin"
+  full_name: "Admin User"
 };
 
 export const authService = {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     if (USE_MOCK_DATA) {
-      // For testing - accept any credentials with non-empty username/password
-      if (credentials.username && credentials.password) {
+      // Mock login for development
+      if (credentials.username === "admin" && credentials.password === "password") {
         return {
           access: "mock-access-token",
           refresh: "mock-refresh-token",
-          user: MOCK_USER
+          user: MOCK_USER,
+          clinics: [],
+          current_clinic: null
         };
       } else {
         throw new Error("Invalid credentials");
