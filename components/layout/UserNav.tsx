@@ -18,12 +18,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
-import { User, Settings, LogOut } from "lucide-react";
+import { User, Settings, LogOut, Building2 } from "lucide-react";
 
 export function UserNav() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, clinics, currentClinic, setCurrentClinic } = useAuth();
   
   const handleLogout = async () => {
     await logout();
@@ -59,6 +61,35 @@ export function UserNav() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        
+        {/* Clinic Selector */}
+        {clinics && clinics.length > 0 && (
+          
+          <>
+            <DropdownMenuLabel className="flex items-center">
+              <Building2 className="mr-2 h-4 w-4 text-gray-500" />
+              <span className="text-xs font-medium">Current Clinic</span>
+            </DropdownMenuLabel>
+            <DropdownMenuRadioGroup 
+              value={currentClinic?.id?.toString()} 
+              onValueChange={(value) => {
+                const clinic = clinics.find(c => c.id.toString() === value);
+                if (clinic) {
+                  setCurrentClinic(clinic);
+                }
+              }}
+            >
+              {clinics.map((clinic) => (
+                console.log(clinic),
+                <DropdownMenuRadioItem key={clinic.id} value={clinic.id.toString()}>
+                  {clinic.name}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
             <Link href="/profile" className="cursor-pointer flex w-full">

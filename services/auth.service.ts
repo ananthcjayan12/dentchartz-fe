@@ -24,7 +24,7 @@ axios.interceptors.response.use(
         }
 
         // Try to refresh the token
-        const response = await axios.post(`${API_URL}/auth/token/refresh/`, {
+        const response = await axios.post(`${API_URL}/auth/refresh/`, {
           refresh: refreshToken,
         });
 
@@ -69,6 +69,8 @@ export interface User {
 export interface Clinic {
   id: number;
   name: string;
+  role?: string;
+  is_primary?: boolean;
   // Add other clinic fields as needed
 }
 
@@ -117,7 +119,7 @@ export const authService = {
       return { access: "mock-refreshed-access-token" };
     }
     
-    const response = await axios.post(`${API_URL}/auth/token/refresh/`, {
+    const response = await axios.post(`${API_URL}/auth/refresh/`, {
       refresh: refreshToken,
     });
     return response.data;
@@ -133,12 +135,18 @@ export const authService = {
     });
   },
 
-  async getCurrentUser(token: string): Promise<AuthResponse["user"]> {
+  async getCurrentUser(token: string): Promise<AuthResponse> {
     if (USE_MOCK_DATA) {
-      return MOCK_USER;
+      return {
+        access: "mock-access-token",
+        refresh: "mock-refresh-token",
+        user: MOCK_USER,
+        clinics: [],
+        current_clinic: null
+      };
     }
     
-    const response = await axios.get(`${API_URL}/auth/me/`, {
+    const response = await axios.get(`${API_URL}/auth/user/`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

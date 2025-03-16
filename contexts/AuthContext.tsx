@@ -11,23 +11,17 @@ type User = {
   id: number;
   username: string;
   email: string;
-  first_name: string;
-  last_name: string;
-  full_name: string;
+  first_name?: string;
+  last_name?: string;
+  full_name?: string;
 };
 
 type Clinic = {
   id: number;
   name: string;
+  role?: string;
+  is_primary?: boolean;
   // Add other clinic fields as needed
-};
-
-type AuthResponse = {
-  access: string;
-  refresh: string;
-  user: User;
-  clinics: Clinic[];
-  current_clinic: Clinic | null;
 };
 
 type AuthContextType = {
@@ -74,49 +68,32 @@ const clearTokens = () => {
 
 // Provider component
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Start with loading true
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [currentClinic, setCurrentClinic] = useState<Clinic | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Check if user is already logged in on mount
+  // Check for existing token on mount
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        const accessToken = localStorage.getItem("accessToken");
-        const refreshToken = localStorage.getItem("refreshToken");
-        
-        if (!accessToken || !refreshToken) {
-          setIsLoading(false);
-          return;
-        }
-        
+      setIsLoading(true);
+      const token = localStorage.getItem("accessToken");
+      
+      if (token) {
         try {
-          // Validate token by getting current user
-          const userData = await authService.getCurrentUser(accessToken);
-          setUser(userData);
+          const authData = await authService.getCurrentUser(token);
+          setUser(authData.user);
+          setClinics(authData.clinics || []);
+          setCurrentClinic(authData.current_clinic || null);
         } catch (error) {
-          // Token might be expired, try to refresh
-          try {
-            const { access } = await authService.refreshToken(refreshToken);
-            localStorage.setItem("accessToken", access);
-            Cookies.set("accessToken", access, { 
-              expires: 1,
-              sameSite: "strict",
-              path: "/"
-            });
-            
-            // Get user data with new token
-            const userData = await authService.getCurrentUser(access);
-            setUser(userData);
-          } catch (refreshError) {
-            // If refresh fails, clear tokens
-            clearTokens();
-          }
+          console.error("Auth check error:", error);
+          clearTokens();
         }
-      } finally {
-        setIsLoading(false);
       }
+      
+      setIsLoading(false);
     };
     
     checkAuth();
@@ -128,20 +105,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     
     try {
-      const credentials: LoginCredentials = { username, password };
-      const response = await authService.login(credentials);
+      const authData = await authService.login({ username, password });
       
-      // Store tokens
-      setTokens(response.access, response.refresh);
+      // Save tokens
+      setTokens(authData.access, authData.refresh);
       
-      // Set user
-      setUser(response.user);
+      // Set user data
+      setUser(authData.user);
+      setClinics(authData.clinics || []);
+      setCurrentClinic(authData.current_clinic || null);
       
       // Redirect to dashboard
       router.push("/dashboard");
       
       toast.success("Login successful", {
-        description: `Welcome back, ${response.user.first_name || response.user.username}!`,
+        description: `Welcome back, ${authData.user.first_name || authData.user.username}!`,
       });
     } catch (error: any) {
       const errorMessage = error.response?.data?.detail || 
@@ -173,6 +151,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear tokens and user data regardless of API response
       clearTokens();
       setUser(null);
+      setClinics([]);
+      setCurrentClinic(null);
       setIsLoading(false);
       
       // Redirect to login
@@ -191,6 +171,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         error,
+        clinics,
+        currentClinic,
+        setCurrentClinic,
       }}
     >
       {children}
