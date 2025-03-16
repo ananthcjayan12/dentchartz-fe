@@ -13,7 +13,7 @@ import { format, parseISO } from "date-fns";
 import { 
   ArrowLeft, Calendar, Clock, Edit, User, FileText, 
   AlertTriangle, Phone, Mail, MapPin, ClipboardList, 
-  Activity, FileSymlink 
+  Activity, FileSymlink
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -25,6 +25,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ToothIcon } from "@/components/icons/ToothIcon";
 
 export default function AppointmentDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -409,8 +410,8 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
                 
                 <Button variant="outline" className="w-full" asChild>
                   <Link href={`/patients/${getPatientId()}/dental-chart`}>
-                    <ClipboardList className="mr-2 h-4 w-4" />
-                    View Dental Chart
+                    <ToothIcon className="mr-2 h-4 w-4" />
+                    Dental Chart
                   </Link>
                 </Button>
                 

@@ -130,9 +130,9 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
             <Trash2 className="mr-2 h-4 w-4" />
             Delete
           </Button>
-          <Button variant="outline" asChild>
-            <Link href={`/patients/${patient.id}/dental-chart`}>
-              <ToothIcon className="mr-2 h-4 w-4" />
+          <Button variant="outline" asChild className="ml-2">
+            <Link href={`/patients/${params.id}/dental-chart`}>
+              <ToothIcon className="h-4 w-4 mr-2" />
               Dental Chart
             </Link>
           </Button>

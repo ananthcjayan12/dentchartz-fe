@@ -161,12 +161,13 @@ export const appointmentService = {
     }
     
     const response = await apiGet(`/clinics/${clinicId}/time-slots/?${queryParams.toString()}`);
+    
     return response.time_slots.map((slot: any) => ({
       time: slot.time,
       available: slot.available,
       selected: slot.selected || false,
-      patient_name: slot.patient_name,
-      appointment_id: slot.appointment_id
+      patientName: slot.patient_name,
+      appointmentId: slot.appointment_id
     }));
   },
   

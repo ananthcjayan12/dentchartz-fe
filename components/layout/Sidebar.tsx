@@ -16,6 +16,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { ToothIcon } from "@/components/icons/ToothIcon";
 
 type NavItem = {
   title: string;
@@ -23,6 +24,7 @@ type NavItem = {
   icon: React.ReactNode;
   adminOnly?: boolean;
   current?: boolean;
+  submenu?: { title: string; href: string }[];
 };
 
 const navItems: NavItem[] = [
@@ -58,6 +60,21 @@ const navItems: NavItem[] = [
     href: "/settings",
     icon: <Settings className="h-5 w-5" />,
     adminOnly: true,
+  },
+  {
+    title: "Dental Charts",
+    href: "/dental-charts",
+    icon: <ToothIcon className="h-5 w-5" />,
+    submenu: [
+      {
+        title: "Recent Charts",
+        href: "/dental-charts/recent",
+      },
+      {
+        title: "Chart Templates",
+        href: "/dental-charts/templates",
+      }
+    ]
   },
 ];
 
