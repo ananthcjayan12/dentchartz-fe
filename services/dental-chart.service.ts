@@ -138,6 +138,13 @@ export const dentalChartService = {
     try {
       const response = await apiPost(url, conditionData);
       console.log("API response:", response);
+      
+      // Ensure we're returning a properly formatted ToothCondition object
+      // This helps prevent "Cannot read properties of undefined (reading 'filter')" errors
+      if (!response || typeof response !== 'object') {
+        throw new Error('Invalid response format from API');
+      }
+      
       return response;
     } catch (error) {
       console.error("Error in addToothCondition:", error);

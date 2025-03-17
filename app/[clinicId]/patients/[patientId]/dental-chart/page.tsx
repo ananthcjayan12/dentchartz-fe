@@ -1,25 +1,63 @@
-import { use } from 'react';
-import { useParams } from 'next/navigation';
+"use client";
 
-const handleAddCondition = async (conditionData: any) => {
-  try {
-    const response = await dentalChartService.addToothCondition(
-      clinicId,
-      patientId,
-      selectedTooth.number,
-      conditionData
-    );
-    // Handle success - maybe refresh the dental chart data
-    refreshDentalChart();
-  } catch (error) {
-    console.error("Error adding condition:", error);
-    // Handle error - show toast notification
-  }
-};
+import { useState, useEffect } from "react";
+import { dentalChartService } from "@/services/dental-chart.service";
+import { DentalChartViewer } from "@/components/dental-chart/DentalChartViewer";
+import { useParams } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function PatientDentalChartPage() {
-  const params = use(useParams()); // Unwrap params using React.use()
-  const { patientId } = params; // Now you can safely destructure
+  const params = useParams();
+  const { currentClinic } = useAuth();
+  const [dentalChart, setDentalChart] = useState(null);
+  const [selectedTooth, setSelectedTooth] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Rest of your component code...
+  useEffect(() => {
+    const fetchDentalChart = async () => {
+      if (!currentClinic?.id || !params.patientId) return;
+      
+      setIsLoading(true);
+      try {
+        const data = await dentalChartService.getPatientDentalChart(
+          currentClinic.id.toString(),
+          params.patientId.toString()
+        );
+        console.log("Fetched dental chart:", data);
+        setDentalChart(data);
+      } catch (error) {
+        console.error("Error fetching dental chart:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchDentalChart();
+  }, [currentClinic?.id, params.patientId]);
+  
+  const handleToothSelect = (tooth) => {
+    console.log("Selected tooth:", tooth);
+    setSelectedTooth(tooth);
+  };
+  
+  if (isLoading) {
+    return <div>Loading dental chart...</div>;
+  }
+  
+  return (
+    <div>
+      <DentalChartViewer 
+        dentalChart={dentalChart} 
+        onToothSelect={handleToothSelect} 
+        selectedTooth={selectedTooth} 
+      />
+      
+      {selectedTooth && (
+        <div className="mt-4 p-4 border rounded-md">
+          <h2>Selected Tooth: {selectedTooth.name} (#{selectedTooth.number})</h2>
+          {/* Add more details or actions for the selected tooth */}
+        </div>
+      )}
+    </div>
+  );
 } 
