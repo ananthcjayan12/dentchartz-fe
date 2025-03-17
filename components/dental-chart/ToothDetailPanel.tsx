@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Tooth, ToothCondition, ToothProcedure, DentalCondition, DentalProcedure } from "@/services/dental-chart.service";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,12 +44,30 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+interface ExtendedDentalProcedure extends DentalProcedure {
+  price?: number;
+}
+
 interface ToothDetailPanelProps {
   tooth: Tooth;
-  conditions: DentalCondition[];
-  procedures: DentalProcedure[];
+  conditions: {
+    id: number;
+    name: string;
+    code: string;
+    description: string;
+    color_code: string;
+    icon: string;
+    is_standard: boolean;
+    created_at: string;
+  }[];
+  procedures: ExtendedDentalProcedure[];
   onAddCondition: (data: {
-    condition_id: number;
+    condition_id?: number;
+    condition_name?: string;
+    condition_code?: string;
+    custom_name?: string;
+    custom_code?: string;
+    custom_description?: string;
     surface: string;
     notes?: string;
     severity?: string;
@@ -73,43 +91,17 @@ interface ToothDetailPanelProps {
   onDeleteCondition: (conditionId: number) => void;
 }
 
-// Add these standard dental conditions and procedures
-const STANDARD_CONDITIONS = [
-  { id: 1, name: "Cavity", code: "C01" },
-  { id: 2, name: "Filling", code: "F01" },
-  { id: 3, name: "Crown", code: "CR01" },
-  { id: 4, name: "Root Canal", code: "RC01" },
-  { id: 5, name: "Extraction", code: "EX01" },
-  { id: 6, name: "Gingivitis", code: "G01" },
-  { id: 7, name: "Fracture", code: "FR01" },
-  { id: 8, name: "Abscess", code: "AB01" },
-  { id: 9, name: "Missing", code: "M01" },
-  { id: 10, name: "Impacted", code: "IM01" }
-];
-
-const STANDARD_PROCEDURES = [
-  { id: 1, name: "Amalgam Filling", code: "D2140", price: 120 },
-  { id: 2, name: "Composite Filling", code: "D2330", price: 150 },
-  { id: 3, name: "Root Canal Therapy", code: "D3310", price: 700 },
-  { id: 4, name: "Crown - Porcelain/Ceramic", code: "D2740", price: 1200 },
-  { id: 5, name: "Extraction - Simple", code: "D7140", price: 150 },
-  { id: 6, name: "Extraction - Surgical", code: "D7210", price: 250 },
-  { id: 7, name: "Scaling and Root Planing", code: "D4341", price: 200 },
-  { id: 8, name: "Dental Cleaning", code: "D1110", price: 100 },
-  { id: 9, name: "Dental Exam", code: "D0120", price: 50 },
-  { id: 10, name: "X-Ray - Periapical", code: "D0220", price: 30 }
-];
-
 const conditionFormSchema = z.object({
-  condition_id: z.number({
-    required_error: "Please select a condition",
-  }).or(z.literal("custom")),
-  custom_condition: z.string().optional().refine(val => {
-    // If condition_id is "custom", then custom_condition is required
-    return val !== undefined && val.trim() !== "" || typeof val === "undefined";
-  }, {
-    message: "Custom condition name is required",
-  }),
+  condition_id: z.union([
+    z.number(),
+    z.string().transform((val) => {
+      if (val === "custom") return "custom";
+      return parseInt(val);
+    })
+  ]),
+  custom_condition: z.string().optional(),
+  custom_code: z.string().optional(),
+  custom_description: z.string().optional(),
   surface: z.string().min(1, "Please select at least one surface"),
   notes: z.string().optional(),
   severity: z.string().optional(),
@@ -126,6 +118,7 @@ const procedureFormSchema = z.object({
     message: "Custom procedure name is required",
   }),
   custom_code: z.string().optional(),
+  custom_description: z.string().optional(),
   surface: z.string().min(1, "Please select at least one surface"),
   notes: z.string().optional(),
   date_performed: z.date({
@@ -153,9 +146,39 @@ export function ToothDetailPanel({
   const [isCustomCondition, setIsCustomCondition] = useState(false);
   const [isCustomProcedure, setIsCustomProcedure] = useState(false);
   
-  // Combine API-provided conditions with standard ones
-  const allConditions = [...STANDARD_CONDITIONS, ...(conditions || [])];
-  const allProcedures = [...STANDARD_PROCEDURES, ...(procedures || [])];
+  // Update the allConditions useMemo to handle the API response format
+  const allConditions = useMemo(() => {
+    // If conditions is undefined or empty, return empty array
+    if (!conditions?.length) return [];
+    
+    // Map the conditions from the API response
+    return conditions.map(condition => ({
+      id: condition.id,
+      name: condition.name,
+      code: condition.code,
+      description: condition.description,
+      color_code: condition.color_code,
+      icon: condition.icon
+    }));
+  }, [conditions]);
+
+  // Update the allProcedures useMemo
+  const allProcedures = useMemo(() => {
+    // If procedures is undefined or empty, return empty array
+    if (!procedures?.length) return [];
+    
+    // Map the procedures from the API response
+    return procedures.map(procedure => ({
+      id: procedure.id,
+      name: procedure.name,
+      code: procedure.code,
+      description: procedure.description,
+      category: procedure.category,
+      default_price: procedure.default_price,
+      duration_minutes: procedure.duration_minutes,
+      price: procedure.default_price // Map default_price to price for ExtendedDentalProcedure
+    }));
+  }, [procedures]);
   
   const conditionForm = useForm<z.infer<typeof conditionFormSchema>>({
     resolver: zodResolver(conditionFormSchema),
@@ -190,7 +213,7 @@ export function ToothDetailPanel({
     
     // Set default price if a standard procedure is selected
     if (typeof selectedProcedureId === "number") {
-      const selectedProcedure = allProcedures.find(p => p.id === selectedProcedureId);
+      const selectedProcedure = allProcedures.find(p => p.id === selectedProcedureId) as ExtendedDentalProcedure;
       if (selectedProcedure?.price) {
         procedureForm.setValue("price", selectedProcedure.price);
       }
@@ -198,6 +221,8 @@ export function ToothDetailPanel({
   }, [selectedProcedureId, allProcedures, procedureForm]);
   
   const handleAddConditionSubmit = (data: z.infer<typeof conditionFormSchema>) => {
+    console.log("Form submitted with data:", data);
+    
     let conditionData: any = {
       surface: data.surface,
       notes: data.notes,
@@ -207,19 +232,25 @@ export function ToothDetailPanel({
     if (data.condition_id === "custom") {
       // Handle custom condition
       conditionData.custom_name = data.custom_condition;
+      conditionData.custom_code = data.custom_code || `CUST${Math.floor(Math.random() * 1000)}`;
+      conditionData.custom_description = data.notes || "";
     } else {
       // Handle standard condition
-      // Convert string to number if needed
       conditionData.condition_id = typeof data.condition_id === 'string' 
         ? parseInt(data.condition_id) 
         : data.condition_id;
+      
+      // Find the selected condition to include additional data if needed
+      const selectedCondition = allConditions.find(c => c.id === conditionData.condition_id);
+      if (selectedCondition) {
+        conditionData.condition_name = selectedCondition.name;
+        conditionData.condition_code = selectedCondition.code;
+      }
     }
     
-    if (editingCondition) {
-      onUpdateCondition(editingCondition.id, conditionData);
-    } else {
-      onAddCondition(conditionData);
-    }
+    console.log("Sending condition data to API:", conditionData);
+    onAddCondition(conditionData);
+    
     setShowAddConditionDialog(false);
     setEditingCondition(null);
     conditionForm.reset();
@@ -237,7 +268,8 @@ export function ToothDetailPanel({
     if (data.procedure_id === "custom") {
       // Handle custom procedure
       procedureData.custom_name = data.custom_procedure;
-      procedureData.custom_code = data.custom_code;
+      procedureData.custom_code = data.custom_code || `CUST${Math.floor(Math.random() * 1000)}`;
+      procedureData.custom_description = data.custom_description || `Custom procedure: ${data.custom_procedure}`;
     } else {
       // Handle standard procedure
       // Convert string to number if needed
@@ -316,12 +348,16 @@ export function ToothDetailPanel({
                             <FormLabel>Condition</FormLabel>
                             <Select
                               onValueChange={(value) => {
-                                field.onChange(value);
-                                if (value !== "custom") {
-                                  const selectedCondition = allConditions.find(c => c.id.toString() === value);
-                                  if (selectedCondition) {
-                                    conditionForm.setValue("custom_condition", "");
-                                  }
+                                if (value === "custom") {
+                                  field.onChange("custom");
+                                } else {
+                                  const numericValue = parseInt(value);
+                                  field.onChange(numericValue);
+                                  
+                                  // Clear custom fields when selecting a standard condition
+                                  conditionForm.setValue("custom_condition", "");
+                                  conditionForm.setValue("custom_code", "");
+                                  conditionForm.setValue("custom_description", "");
                                 }
                               }}
                               defaultValue={field.value?.toString()}
@@ -333,11 +369,16 @@ export function ToothDetailPanel({
                               </FormControl>
                               <SelectContent>
                                 {allConditions.map((condition) => (
-                                  <SelectItem key={condition.id} value={condition.id.toString()}>
+                                  <SelectItem 
+                                    key={`condition-${condition.id}`} 
+                                    value={condition.id.toString()}
+                                  >
                                     {condition.name} ({condition.code})
                                   </SelectItem>
                                 ))}
-                                <SelectItem value="custom">+ Add Custom Condition</SelectItem>
+                                <SelectItem key="custom-condition" value="custom">
+                                  + Add Custom Condition
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -346,19 +387,49 @@ export function ToothDetailPanel({
                       />
                       
                       {isCustomCondition && (
-                        <FormField
-                          control={conditionForm.control}
-                          name="custom_condition"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Custom Condition Name</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter condition name" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                        <>
+                          <FormField
+                            control={conditionForm.control}
+                            name="custom_condition"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Custom Condition Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Enter condition name" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={conditionForm.control}
+                            name="custom_code"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Custom Condition Code</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Enter condition code (optional)" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={conditionForm.control}
+                            name="custom_description"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Description</FormLabel>
+                                <FormControl>
+                                  <Textarea placeholder="Enter condition description (optional)" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </>
                       )}
                       
                       <FormField
@@ -437,9 +508,7 @@ export function ToothDetailPanel({
                       />
                       
                       <DialogFooter>
-                        <Button type="submit">
-                          {editingCondition ? "Update Condition" : "Add Condition"}
-                        </Button>
+                        <Button type="submit">Save Condition</Button>
                       </DialogFooter>
                     </form>
                   </Form>
@@ -529,13 +598,16 @@ export function ToothDetailPanel({
                             <FormLabel>Procedure</FormLabel>
                             <Select
                               onValueChange={(value) => {
-                                field.onChange(value);
-                                if (value !== "custom") {
-                                  const selectedProcedure = allProcedures.find(p => p.id.toString() === value);
-                                  if (selectedProcedure) {
-                                    procedureForm.setValue("price", selectedProcedure.price);
-                                    procedureForm.setValue("custom_procedure", "");
-                                    procedureForm.setValue("custom_code", "");
+                                if (value === "custom") {
+                                  field.onChange("custom");
+                                } else {
+                                  const numericValue = parseInt(value);
+                                  field.onChange(numericValue);
+                                  
+                                  // Set default price when selecting a procedure
+                                  const selectedProcedure = allProcedures.find(p => p.id === numericValue);
+                                  if (selectedProcedure?.default_price) {
+                                    procedureForm.setValue("price", selectedProcedure.default_price);
                                   }
                                 }
                               }}
@@ -548,11 +620,16 @@ export function ToothDetailPanel({
                               </FormControl>
                               <SelectContent>
                                 {allProcedures.map((procedure) => (
-                                  <SelectItem key={procedure.id} value={procedure.id.toString()}>
-                                    {procedure.name} ({procedure.code}) - ${procedure.price}
+                                  <SelectItem 
+                                    key={`procedure-${procedure.id}`} 
+                                    value={procedure.id.toString()}
+                                  >
+                                    {procedure.name} ({procedure.code})
                                   </SelectItem>
                                 ))}
-                                <SelectItem value="custom">+ Add Custom Procedure</SelectItem>
+                                <SelectItem key="custom-procedure" value="custom">
+                                  + Add Custom Procedure
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -584,6 +661,20 @@ export function ToothDetailPanel({
                                 <FormLabel>Custom Procedure Code</FormLabel>
                                 <FormControl>
                                   <Input placeholder="Enter procedure code (optional)" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={procedureForm.control}
+                            name="custom_description"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Description</FormLabel>
+                                <FormControl>
+                                  <Textarea placeholder="Enter procedure description (optional)" {...field} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -777,7 +868,7 @@ export function ToothDetailPanel({
                           <p className="text-xs text-gray-400">
                             Performed by {procedure.performed_by}
                           </p>
-                          <p className="font-medium">${procedure.price.toFixed(2)}</p>
+                          <p className="font-medium">${(procedure as ExtendedDentalProcedure).price?.toFixed(2) || 0}</p>
                         </div>
                       </div>
                     </CardContent>

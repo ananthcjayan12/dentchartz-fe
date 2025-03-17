@@ -93,6 +93,16 @@ export interface ProceduresResponse {
   results: DentalProcedure[];
 }
 
+export interface AddToothConditionData {
+  condition_id?: number;
+  custom_name?: string;
+  custom_code?: string;
+  custom_description?: string;
+  surface: string;
+  notes?: string;
+  severity?: string;
+}
+
 export const dentalChartService = {
   // Get patient's dental chart
   getPatientDentalChart: async (clinicId: string, patientId: string): Promise<DentalChart> => {
@@ -114,17 +124,25 @@ export const dentalChartService = {
     clinicId: string,
     patientId: string,
     toothNumber: number,
-    conditionData: {
-      condition_id: number;
-      surface: string;
-      notes?: string;
-      severity?: string;
-    }
+    conditionData: AddToothConditionData
   ): Promise<ToothCondition> => {
-    return apiPost(
-      `/clinics/${clinicId}/patients/${patientId}/dental-chart/tooth/${toothNumber}/condition/`,
+    console.log("Adding tooth condition:", {
+      clinicId,
+      patientId,
+      toothNumber,
       conditionData
-    );
+    });
+
+    const url = `/clinics/${clinicId}/patients/${patientId}/dental-chart/tooth/${toothNumber}/condition/`;
+    
+    try {
+      const response = await apiPost(url, conditionData);
+      console.log("API response:", response);
+      return response;
+    } catch (error) {
+      console.error("Error in addToothCondition:", error);
+      throw error;
+    }
   },
 
   // Add procedure to tooth

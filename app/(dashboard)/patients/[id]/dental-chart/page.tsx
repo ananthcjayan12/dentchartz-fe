@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { dentalChartService, DentalChart, Tooth, DentalCondition, DentalProcedure } from "@/services/dental-chart.service";
 import { patientService } from "@/services/patient.service";
@@ -17,10 +17,10 @@ import { DentalChartViewer } from "@/components/dental-chart/DentalChartViewer";
 import { ToothDetailPanel } from "@/components/dental-chart/ToothDetailPanel";
 import { ChartHistoryViewer } from "@/components/dental-chart/ChartHistoryViewer";
 
-export default function PatientDentalChartPage({ params }: { params: { id: string } }) {
+export default function PatientDentalChartPage() {
   const router = useRouter();
   const { currentClinic } = useAuth();
-  const patientId = params.id;
+  const { id: patientId } = useParams();
   
   const [dentalChart, setDentalChart] = useState<DentalChart | null>(null);
   const [conditions, setConditions] = useState<DentalCondition[]>([]);
@@ -81,23 +81,37 @@ export default function PatientDentalChartPage({ params }: { params: { id: strin
   const handleAddCondition = async (
     toothNumber: number,
     conditionData: {
-      condition_id: number;
+      condition_id?: number;
+      custom_name?: string;
+      custom_code?: string;
+      custom_description?: string;
       surface: string;
       notes?: string;
       severity?: string;
     }
   ) => {
-    if (!currentClinic?.id) return;
+    console.log("handleAddCondition called with:", toothNumber, conditionData);
+    
+    if (!currentClinic?.id) {
+      console.error("No clinic selected");
+      toast.error("No clinic selected");
+      return;
+    }
     
     try {
+      console.log("Making API call to add condition");
+      
+      // Make API call to add condition
       const newCondition = await dentalChartService.addToothCondition(
         currentClinic.id.toString(),
-        patientId,
+        patientId as string,
         toothNumber,
         conditionData
       );
       
-      // Update the dental chart with the new condition
+      console.log("API call successful, new condition:", newCondition);
+      
+      // Update local state
       if (dentalChart) {
         const updatedTeeth = dentalChart.teeth.map(tooth => {
           if (tooth.number === toothNumber) {
@@ -316,24 +330,26 @@ export default function PatientDentalChartPage({ params }: { params: { id: strin
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {selectedTooth ? (
-                      <ToothDetailPanel 
+                    {selectedTooth && (
+                      <ToothDetailPanel
                         tooth={selectedTooth}
                         conditions={conditions}
                         procedures={procedures}
-                        onAddCondition={(data) => handleAddCondition(selectedTooth.number, data)}
-                        onAddProcedure={(data) => handleAddProcedure(selectedTooth.number, data)}
-                        onUpdateCondition={(conditionId, data) => 
-                          handleUpdateCondition(selectedTooth.number, conditionId, data)
-                        }
-                        onDeleteCondition={(conditionId) => 
-                          handleDeleteCondition(selectedTooth.number, conditionId)
-                        }
+                        onAddCondition={(conditionData) => {
+                          console.log("onAddCondition callback triggered with:", conditionData);
+                          handleAddCondition(selectedTooth.number, conditionData);
+                        }}
+                        onUpdateCondition={(conditionId, updateData) => {
+                          handleUpdateCondition(selectedTooth.number, conditionId, updateData);
+                        }}
+                        onDeleteCondition={(conditionId) => {
+                          handleDeleteCondition(selectedTooth.number, conditionId);
+                        }}
+                        onAddProcedure={(procedureData) => {
+                          handleAddProcedure(selectedTooth.number, procedureData);
+                        }}
+                        onClose={() => setSelectedTooth(null)}
                       />
-                    ) : (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500">Select a tooth to view details</p>
-                      </div>
                     )}
                 </CardContent>
               </Card>
