@@ -202,7 +202,7 @@ export const dentalChartService = {
   updateToothProcedure: async (
     clinicId: string,
     patientId: string,
-    toothNumber: number,
+    toothNumber: string,
     procedureId: number,
     updateData: {
       surface?: string;
@@ -228,7 +228,7 @@ export const dentalChartService = {
   deleteToothProcedure: async (
     clinicId: string,
     patientId: string,
-    toothNumber: number,
+    toothNumber: string,
     procedureId: number
   ): Promise<void> => {
     return apiDelete(
