@@ -149,6 +149,7 @@ const procedureFormSchema = z.object({
   status: z.string({
     required_error: "Please select a status",
   }),
+  notes: z.string().optional(),
 });
 
 const procedureNoteFormSchema = z.object({
@@ -378,13 +379,13 @@ export function ToothDetailPanel({
     }
   };
   
-  const handleAddNoteSubmit = async (values: any) => {
+  const handleAddNoteSubmit = async (data: z.infer<typeof procedureNoteFormSchema>) => {
     if (!selectedProcedureForNote) return;
     
     try {
       await onAddProcedureNote(selectedProcedureForNote, {
-        note: values.note,
-        appointment_date: format(values.appointment_date, "yyyy-MM-dd HH:mm")
+        note: data.note,
+        appointment_date: format(data.appointment_date, "yyyy-MM-dd'T'HH:mm:ss")
       });
       
       toast.success("Note added successfully");
@@ -1001,21 +1002,6 @@ export function ToothDetailPanel({
                           >
                             {procedure.status.replace("_", " ")}
                           </Badge>
-                        </div>
-                        {procedure.notes && (
-                          <p className="text-sm mt-2">{procedure.notes}</p>
-                        )}
-                        <div className="flex justify-between items-center mt-2">
-                          <p className="text-xs text-gray-400">
-                            Performed by {procedure.performed_by}
-                          </p>
-                          <p className="font-medium">
-                            ${typeof procedure.price === 'number' 
-                              ? procedure.price.toFixed(2) 
-                              : typeof procedure.price === 'string' 
-                                ? parseFloat(procedure.price).toFixed(2) 
-                                : '0.00'}
-                          </p>
                         </div>
                         {procedure.notes && procedure.notes.length > 0 && (
                           <div className="mt-4 space-y-2">

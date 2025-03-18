@@ -22,7 +22,7 @@ export function ChartHistoryViewer({ patientId }: ChartHistoryViewerProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
     tooth_number: '',
-    category: '',
+    category: 'all',
     start_date: '',
     end_date: ''
   });
@@ -36,10 +36,15 @@ export function ChartHistoryViewer({ patientId }: ChartHistoryViewerProps) {
       
       setIsLoading(true);
       try {
+        const apiFilters = {
+          ...filters,
+          category: filters.category === 'all' ? undefined : filters.category as 'conditions' | 'procedures' | undefined
+        };
+        
         const historyData = await dentalChartService.getChartHistory(
           currentClinic.id.toString(),
           patientId,
-          filters
+          apiFilters
         );
         setHistory(historyData.results);
       } catch (error) {
@@ -193,14 +198,14 @@ export function ChartHistoryViewer({ patientId }: ChartHistoryViewerProps) {
             <DatePicker
               placeholder="Start Date"
               value={filters.start_date}
-              onChange={(date) => setFilters(prev => ({ ...prev, start_date: date }))}
+              onChange={(date: string) => setFilters(prev => ({ ...prev, start_date: date }))}
             />
           </div>
           <div className="w-1/2">
             <DatePicker
               placeholder="End Date"
               value={filters.end_date}
-              onChange={(date) => setFilters(prev => ({ ...prev, end_date: date }))}
+              onChange={(date: string) => setFilters(prev => ({ ...prev, end_date: date }))}
             />
           </div>
         </div>

@@ -103,18 +103,23 @@ export default function PatientDentalChartPage() {
     try {
       console.log("Making API call to add condition");
       
+      // Add dentition_type based on tooth number format
+      const dataWithDentition = {
+        ...conditionData,
+        dentition_type: /^[A-Z]$/.test(toothNumber) ? 'primary' : 'permanent'
+      };
+      
       // Make API call to add condition
       const newCondition = await dentalChartService.addToothCondition(
         currentClinic.id.toString(),
         patientId as string,
         toothNumber,
-        conditionData
+        dataWithDentition
       );
       
       console.log("API call successful, new condition:", newCondition);
       
       // Instead of manually updating the state, fetch the updated dental chart
-      // This ensures we get the complete updated data structure from the backend
       await fetchDentalChart();
       
       toast.success("Condition added successfully");
@@ -163,7 +168,7 @@ export default function PatientDentalChartPage() {
   };
   
   const handleUpdateCondition = async (
-    toothNumber: number,
+    toothNumber: string | number,
     conditionId: number,
     updateData: {
       surface?: string;
@@ -192,7 +197,7 @@ export default function PatientDentalChartPage() {
     }
   };
   
-  const handleDeleteCondition = async (toothNumber: number, conditionId: number) => {
+  const handleDeleteCondition = async (toothNumber: string | number, conditionId: number) => {
     if (!currentClinic?.id) return;
     
     try {
