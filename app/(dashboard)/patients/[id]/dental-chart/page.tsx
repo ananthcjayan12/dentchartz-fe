@@ -79,7 +79,7 @@ export default function PatientDentalChartPage() {
   };
   
   const handleAddCondition = async (
-    toothNumber: number,
+    toothNumber: string,
     conditionData: {
       condition_id?: number;
       custom_name?: string;
@@ -111,23 +111,9 @@ export default function PatientDentalChartPage() {
       
       console.log("API call successful, new condition:", newCondition);
       
-      // Update local state
-      if (dentalChart) {
-        const updatedTeeth = dentalChart.teeth.map(tooth => {
-          if (tooth.number === toothNumber) {
-            return {
-              ...tooth,
-              conditions: [...tooth.conditions, newCondition]
-            };
-          }
-          return tooth;
-        });
-        
-        setDentalChart({
-          ...dentalChart,
-          teeth: updatedTeeth
-        });
-      }
+      // Instead of manually updating the state, fetch the updated dental chart
+      // This ensures we get the complete updated data structure from the backend
+      await fetchDentalChart();
       
       toast.success("Condition added successfully");
     } catch (error) {
@@ -137,7 +123,7 @@ export default function PatientDentalChartPage() {
   };
   
   const handleAddProcedure = async (
-    toothNumber: number,
+    toothNumber: string,
     procedureData: {
       procedure_id: number;
       surface: string;
@@ -147,33 +133,25 @@ export default function PatientDentalChartPage() {
       status: string;
     }
   ) => {
-    if (!currentClinic?.id) return;
+    if (!currentClinic?.id) {
+      console.error("No clinic selected");
+      toast.error("No clinic selected");
+      return;
+    }
     
     try {
+      // Make API call to add procedure
       const newProcedure = await dentalChartService.addToothProcedure(
         currentClinic.id.toString(),
-        patientId,
+        patientId as string,
         toothNumber,
         procedureData
       );
       
-      // Update the dental chart with the new procedure
-      if (dentalChart) {
-        const updatedTeeth = dentalChart.teeth.map(tooth => {
-          if (tooth.number === toothNumber) {
-            return {
-              ...tooth,
-              procedures: [...tooth.procedures, newProcedure]
-            };
-          }
-          return tooth;
-        });
-        
-        setDentalChart({
-          ...dentalChart,
-          teeth: updatedTeeth
-        });
-      }
+      console.log("API call successful, new procedure:", newProcedure);
+      
+      // Fetch the updated dental chart instead of manually updating state
+      await fetchDentalChart();
       
       toast.success("Procedure added successfully");
     } catch (error) {
@@ -194,38 +172,16 @@ export default function PatientDentalChartPage() {
     if (!currentClinic?.id) return;
     
     try {
-      const updatedCondition = await dentalChartService.updateToothCondition(
+      await dentalChartService.updateToothCondition(
         currentClinic.id.toString(),
-        patientId,
-        toothNumber,
+        patientId as string,
+        toothNumber.toString(),
         conditionId,
         updateData
       );
       
-      // Update the dental chart with the updated condition
-      if (dentalChart) {
-        const updatedTeeth = dentalChart.teeth.map(tooth => {
-          if (tooth.number === toothNumber) {
-            const updatedConditions = tooth.conditions.map(condition => {
-              if (condition.id === conditionId) {
-                return updatedCondition;
-              }
-              return condition;
-            });
-            
-            return {
-              ...tooth,
-              conditions: updatedConditions
-            };
-          }
-          return tooth;
-        });
-        
-        setDentalChart({
-          ...dentalChart,
-          teeth: updatedTeeth
-        });
-      }
+      // Fetch updated dental chart instead of manually updating state
+      await fetchDentalChart();
       
       toast.success("Condition updated successfully");
     } catch (error) {
@@ -240,33 +196,37 @@ export default function PatientDentalChartPage() {
     try {
       await dentalChartService.deleteToothCondition(
         currentClinic.id.toString(),
-        patientId,
-        toothNumber,
+        patientId as string,
+        toothNumber.toString(),
         conditionId
       );
       
-      // Update the dental chart by removing the deleted condition
-      if (dentalChart) {
-        const updatedTeeth = dentalChart.teeth.map(tooth => {
-          if (tooth.number === toothNumber) {
-            return {
-              ...tooth,
-              conditions: tooth.conditions.filter(condition => condition.id !== conditionId)
-            };
-          }
-          return tooth;
-        });
-        
-        setDentalChart({
-          ...dentalChart,
-          teeth: updatedTeeth
-        });
-      }
+      // Fetch updated dental chart instead of manually updating state
+      await fetchDentalChart();
       
       toast.success("Condition removed successfully");
     } catch (error) {
       console.error("Error deleting condition:", error);
       toast.error("Failed to remove condition");
+    }
+  };
+
+  const fetchDentalChart = async () => {
+    if (!currentClinic?.id || !patientId) return;
+    
+    setIsLoading(true);
+    try {
+      const data = await dentalChartService.getPatientDentalChart(
+        currentClinic.id.toString(),
+        patientId
+      );
+      console.log("Fetched dental chart:", data);
+      setDentalChart(data);
+    } catch (error) {
+      console.error("Error fetching dental chart:", error);
+      toast.error("Failed to load dental chart");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -314,7 +274,7 @@ export default function PatientDentalChartPage() {
             </CardHeader>
                   <CardContent>
                     <DentalChartViewer 
-                      teeth={dentalChart.teeth} 
+                      teeth={[...(dentalChart.permanent_teeth || []), ...(dentalChart.primary_teeth || [])]} 
                       onToothSelect={handleToothSelect} 
                 selectedTooth={selectedTooth}
                     />
@@ -337,7 +297,7 @@ export default function PatientDentalChartPage() {
                         procedures={procedures}
                         onAddCondition={(conditionData) => {
                           console.log("onAddCondition callback triggered with:", conditionData);
-                          handleAddCondition(selectedTooth.number, conditionData);
+                          handleAddCondition(selectedTooth.number.toString(), conditionData);
                         }}
                         onUpdateCondition={(conditionId, updateData) => {
                           handleUpdateCondition(selectedTooth.number, conditionId, updateData);

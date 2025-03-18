@@ -6,17 +6,14 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DentalChartViewerProps {
-  dentalChart: {
-    permanent_teeth?: Tooth[];
-    primary_teeth?: Tooth[];
-  };
+  teeth: Tooth[];
   onToothSelect: (tooth: Tooth) => void;
   selectedTooth: Tooth | null;
   showPrimary?: boolean;
 }
 
 export function DentalChartViewer({ 
-  dentalChart, 
+  teeth, 
   onToothSelect, 
   selectedTooth,
   showPrimary = false
@@ -103,19 +100,19 @@ export function DentalChartViewer({
   };
   
   // Extract teeth from the dental chart based on the selected dentition type
-  const teeth = isPediatric 
-    ? (dentalChart?.primary_teeth?.length > 0 ? dentalChart.primary_teeth : createDefaultTeeth(true))
-    : (dentalChart?.permanent_teeth?.length > 0 ? dentalChart.permanent_teeth : createDefaultTeeth(false));
+  const filteredTeeth = isPediatric 
+    ? (teeth?.filter(tooth => tooth.dentition_type === "primary") || createDefaultTeeth(true))
+    : (teeth?.filter(tooth => tooth.dentition_type === "permanent") || createDefaultTeeth(false));
   
   // Ensure teeth is always an array, even if undefined is passed
-  const safeTeeth = Array.isArray(teeth) ? teeth : [];
+  const safeTeeth = Array.isArray(filteredTeeth) ? filteredTeeth : [];
   
   // Log the data to debug
   useEffect(() => {
-    console.log("Dental Chart Data:", dentalChart);
+    console.log("Dental Chart Data:", teeth);
     console.log("Current teeth array:", safeTeeth);
     console.log("Is Pediatric:", isPediatric);
-  }, [dentalChart, safeTeeth, isPediatric]);
+  }, [teeth, safeTeeth, isPediatric]);
   
   // Group teeth by quadrant
   const upperRight = safeTeeth
@@ -256,6 +253,9 @@ export function DentalChartViewer({
                         onClick={() => onToothSelect(tooth)}
                       >
                         {tooth.number}
+                        {tooth.conditions.length > 0 && (
+                          <span className="condition-indicator"></span>
+                        )}
                       </button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -281,6 +281,9 @@ export function DentalChartViewer({
                         onClick={() => onToothSelect(tooth)}
                       >
                         {tooth.number}
+                        {tooth.conditions.length > 0 && (
+                          <span className="condition-indicator"></span>
+                        )}
                       </button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -309,6 +312,9 @@ export function DentalChartViewer({
                         onClick={() => onToothSelect(tooth)}
                       >
                         {tooth.number}
+                        {tooth.conditions.length > 0 && (
+                          <span className="condition-indicator"></span>
+                        )}
                       </button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -334,6 +340,9 @@ export function DentalChartViewer({
                         onClick={() => onToothSelect(tooth)}
                       >
                         {tooth.number}
+                        {tooth.conditions.length > 0 && (
+                          <span className="condition-indicator"></span>
+                        )}
                       </button>
                     </TooltipTrigger>
                     <TooltipContent>

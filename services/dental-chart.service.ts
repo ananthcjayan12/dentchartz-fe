@@ -1,10 +1,12 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from "./api.utils";
 
 export interface Tooth {
+  id: number;
   number: string;
+  universal_number: number;
+  dentition_type: 'permanent' | 'primary';
   name: string;
   quadrant: string;
-  dentition_type: 'permanent' | 'primary';
   conditions: ToothCondition[];
   procedures: ToothProcedure[];
 }
@@ -13,27 +15,26 @@ export interface ToothCondition {
   id: number;
   condition_id: number;
   condition_name: string;
+  condition_code: string;
   surface: string;
-  notes: string;
+  notes?: string;
   severity?: string;
   created_at: string;
+  updated_at: string;
   created_by: string;
-  updated_at?: string;
-  updated_by?: string;
+  updated_by: string;
 }
 
 export interface ToothProcedure {
   id: number;
-  procedure_id: number;
   procedure_name: string;
   procedure_code: string;
   surface: string;
-  notes: string;
+  notes?: string;
   date_performed: string;
-  performed_by: string;
-  price: number;
+  price: string;
   status: string;
-  created_at: string;
+  performed_by: string;
 }
 
 export interface DentalChart {
@@ -41,7 +42,8 @@ export interface DentalChart {
   patient_id: number;
   patient_name: string;
   last_updated: string;
-  teeth: Tooth[];
+  permanent_teeth: Tooth[];
+  primary_teeth: Tooth[];
 }
 
 export interface DentalCondition {
