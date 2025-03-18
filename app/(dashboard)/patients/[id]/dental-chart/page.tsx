@@ -282,6 +282,31 @@ export default function PatientDentalChartPage() {
     }
   };
 
+  const handleAddProcedureNote = async (procedureId: number, noteData: {
+    note: string;
+    appointment_date: string;
+  }) => {
+    if (!currentClinic?.id || !selectedTooth) return;
+    
+    try {
+      await dentalChartService.addProcedureNote(
+        currentClinic.id.toString(),
+        patientId as string,
+        selectedTooth.number,
+        procedureId,
+        noteData
+      );
+      
+      // Fetch updated dental chart
+      await fetchDentalChart();
+      
+      toast.success("Note added successfully");
+    } catch (error) {
+      console.error("Error adding procedure note:", error);
+      toast.error("Failed to add note");
+    }
+  };
+
   return (
     <div className="container mx-auto py-6">
       <div className="flex items-center justify-between mb-6">
@@ -366,6 +391,11 @@ export default function PatientDentalChartPage() {
                         onDeleteProcedure={(procedureId) => {
                           handleDeleteProcedure(procedureId);
                         }}
+                        onAddProcedureNote={(procedureId, noteData) => {
+                          handleAddProcedureNote(procedureId, noteData);
+                        }}
+                        clinicId={currentClinic?.id.toString()}
+                        patientId={patientId as string}
                         onClose={() => setSelectedTooth(null)}
                       />
                     )}

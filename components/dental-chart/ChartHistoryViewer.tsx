@@ -7,7 +7,10 @@ import { format, parseISO } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Tooth, Plus, Minus, Edit, AlertCircle } from "lucide-react";
+import { Calendar, Plus, Minus, Edit, AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface ChartHistoryViewerProps {
   patientId: string;
@@ -17,6 +20,12 @@ export function ChartHistoryViewer({ patientId }: ChartHistoryViewerProps) {
   const { currentClinic } = useAuth();
   const [history, setHistory] = useState<ChartHistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    tooth_number: '',
+    category: '',
+    start_date: '',
+    end_date: ''
+  });
   
   useEffect(() => {
     const fetchHistory = async () => {
@@ -29,7 +38,8 @@ export function ChartHistoryViewer({ patientId }: ChartHistoryViewerProps) {
       try {
         const historyData = await dentalChartService.getChartHistory(
           currentClinic.id.toString(),
-          patientId
+          patientId,
+          filters
         );
         setHistory(historyData.results);
       } catch (error) {
@@ -41,7 +51,7 @@ export function ChartHistoryViewer({ patientId }: ChartHistoryViewerProps) {
     };
     
     fetchHistory();
-  }, [currentClinic?.id, patientId]);
+  }, [currentClinic?.id, patientId, filters]);
   
   // Helper function to get icon for action
   const getActionIcon = (action: string) => {
@@ -52,8 +62,14 @@ export function ChartHistoryViewer({ patientId }: ChartHistoryViewerProps) {
         return <Plus className="h-4 w-4" />;
       case "update_condition":
         return <Edit className="h-4 w-4" />;
+      case "update_procedure":
+        return <Edit className="h-4 w-4" />;
       case "remove_condition":
         return <Minus className="h-4 w-4" />;
+      case "remove_procedure":
+        return <Minus className="h-4 w-4" />;
+      case "add_procedure_note":
+        return <Calendar className="h-4 w-4" />;
       default:
         return <AlertCircle className="h-4 w-4" />;
     }
@@ -67,9 +83,13 @@ export function ChartHistoryViewer({ patientId }: ChartHistoryViewerProps) {
       case "add_procedure":
         return "bg-green-100 text-green-800";
       case "update_condition":
+      case "update_procedure":
         return "bg-blue-100 text-blue-800";
       case "remove_condition":
+      case "remove_procedure":
         return "bg-red-100 text-red-800";
+      case "add_procedure_note":
+        return "bg-purple-100 text-purple-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -94,25 +114,46 @@ export function ChartHistoryViewer({ patientId }: ChartHistoryViewerProps) {
           <span className="font-medium">{details.condition_name}</span>
           {details.surface && <span> on {details.surface} surface</span>}
           {details.severity && <span> ({details.severity})</span>}
+          {details.description && (
+            <p className="mt-1 text-gray-600">{details.description}</p>
+          )}
         </div>
       );
     }
     
-    if (action === "add_procedure") {
+    if (action === "add_procedure" || action === "update_procedure") {
       return (
         <div>
           <span className="font-medium">{details.procedure_name}</span>
           {details.surface && <span> on {details.surface} surface</span>}
           {details.status && <span> ({details.status})</span>}
+          {details.price && <span className="ml-2 font-medium">${parseFloat(details.price).toFixed(2)}</span>}
+          {details.description && (
+            <p className="mt-1 text-gray-600">{details.description}</p>
+          )}
         </div>
       );
     }
     
-    if (action === "remove_condition") {
+    if (action === "remove_condition" || action === "remove_procedure") {
       return (
         <div>
-          <span className="font-medium">{details.condition_name}</span>
+          <span className="font-medium">
+            {details.condition_name || details.procedure_name}
+          </span>
           {details.surface && <span> from {details.surface} surface</span>}
+        </div>
+      );
+    }
+    
+    if (action === "add_procedure_note") {
+      return (
+        <div>
+          <div className="flex justify-between">
+            <span className="font-medium">Added note to {details.procedure_name}</span>
+            <span className="text-xs text-gray-500">{details.appointment_date}</span>
+          </div>
+          <p className="mt-1 text-gray-600 bg-gray-50 p-2 rounded">{details.note}</p>
         </div>
       );
     }
@@ -122,6 +163,49 @@ export function ChartHistoryViewer({ patientId }: ChartHistoryViewerProps) {
   
   return (
     <div className="space-y-6">
+      <div className="mb-4 space-y-4">
+        <div className="flex gap-4">
+          <div className="w-1/2">
+            <Input
+              placeholder="Tooth Number"
+              value={filters.tooth_number}
+              onChange={(e) => setFilters(prev => ({ ...prev, tooth_number: e.target.value }))}
+            />
+          </div>
+          <div className="w-1/2">
+            <Select
+              value={filters.category}
+              onValueChange={(value) => setFilters(prev => ({ ...prev, category: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="conditions">Conditions</SelectItem>
+                <SelectItem value="procedures">Procedures</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex gap-4">
+          <div className="w-1/2">
+            <DatePicker
+              placeholder="Start Date"
+              value={filters.start_date}
+              onChange={(date) => setFilters(prev => ({ ...prev, start_date: date }))}
+            />
+          </div>
+          <div className="w-1/2">
+            <DatePicker
+              placeholder="End Date"
+              value={filters.end_date}
+              onChange={(date) => setFilters(prev => ({ ...prev, end_date: date }))}
+            />
+          </div>
+        </div>
+      </div>
+      
       {isLoading ? (
         <div className="text-center py-12">
           <p className="text-gray-500">Loading chart history...</p>

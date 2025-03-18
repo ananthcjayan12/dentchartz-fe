@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { format, parseISO } from "date-fns";
-import { AlertCircle, Edit, Trash2, Plus } from "lucide-react";
+import { AlertCircle, Edit, Trash2, Plus, Calendar, CalendarIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -36,13 +36,18 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar as UICalendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { dentalChartService } from "@/services/dental-chart.service";
 
 interface ExtendedDentalProcedure extends DentalProcedure {
   price?: number;
@@ -101,7 +106,10 @@ interface ToothDetailPanelProps {
     }
   ) => void;
   onDeleteProcedure?: (procedureId: number) => void;
+  onAddProcedureNote?: (procedureId: number, noteData: any) => void;
   onClose?: () => void;
+  clinicId?: string;
+  patientId?: string;
 }
 
 const conditionFormSchema = z.object({
@@ -133,7 +141,7 @@ const procedureFormSchema = z.object({
   custom_code: z.string().optional(),
   custom_description: z.string().optional(),
   surface: z.string().min(1, "Please select at least one surface"),
-  notes: z.string().optional(),
+  description: z.string().optional(),
   date_performed: z.date({
     required_error: "Please select a date",
   }),
@@ -141,6 +149,11 @@ const procedureFormSchema = z.object({
   status: z.string({
     required_error: "Please select a status",
   }),
+});
+
+const procedureNoteFormSchema = z.object({
+  note: z.string().min(1, "Note is required"),
+  appointment_date: z.date()
 });
 
 export function ToothDetailPanel({
@@ -153,7 +166,10 @@ export function ToothDetailPanel({
   onDeleteCondition,
   onUpdateProcedure = () => {},
   onDeleteProcedure = () => {},
+  onAddProcedureNote = () => {},
   onClose,
+  clinicId,
+  patientId,
 }: ToothDetailPanelProps) {
   const [activeTab, setActiveTab] = useState("conditions");
   const [showAddConditionDialog, setShowAddConditionDialog] = useState(false);
@@ -162,6 +178,8 @@ export function ToothDetailPanel({
   const [isCustomCondition, setIsCustomCondition] = useState(false);
   const [isCustomProcedure, setIsCustomProcedure] = useState(false);
   const [editingProcedure, setEditingProcedure] = useState<ToothProcedure | null>(null);
+  const [showAddNoteDialog, setShowAddNoteDialog] = useState(false);
+  const [selectedProcedureForNote, setSelectedProcedureForNote] = useState<number | null>(null);
   
   // Update the allConditions useMemo to handle the API response format
   const allConditions = useMemo(() => {
@@ -214,6 +232,14 @@ export function ToothDetailPanel({
       date_performed: new Date(),
       price: 0,
       status: "completed",
+    },
+  });
+
+  const noteForm = useForm<z.infer<typeof procedureNoteFormSchema>>({
+    resolver: zodResolver(procedureNoteFormSchema),
+    defaultValues: {
+      note: "",
+      appointment_date: new Date(),
     },
   });
 
@@ -349,6 +375,24 @@ export function ToothDetailPanel({
     
     if (confirm("Are you sure you want to remove this procedure?")) {
       onDeleteProcedure(procedureId);
+    }
+  };
+  
+  const handleAddNoteSubmit = async (values: any) => {
+    if (!selectedProcedureForNote) return;
+    
+    try {
+      await onAddProcedureNote(selectedProcedureForNote, {
+        note: values.note,
+        appointment_date: format(values.appointment_date, "yyyy-MM-dd HH:mm")
+      });
+      
+      toast.success("Note added successfully");
+      setShowAddNoteDialog(false);
+      noteForm.reset();
+    } catch (error) {
+      console.error("Error adding note:", error);
+      toast.error("Failed to add note");
     }
   };
   
@@ -813,7 +857,7 @@ export function ToothDetailPanel({
                                 </FormControl>
                               </PopoverTrigger>
                               <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
+                                <UICalendar
                                   mode="single"
                                   selected={field.value}
                                   onSelect={field.onChange}
@@ -925,6 +969,16 @@ export function ToothDetailPanel({
                             <Button 
                               variant="ghost" 
                               size="icon"
+                              onClick={() => {
+                                setSelectedProcedureForNote(procedure.id);
+                                setShowAddNoteDialog(true);
+                              }}
+                            >
+                              <CalendarIcon className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
                               onClick={() => handleDeleteProcedure(procedure.id)}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -963,6 +1017,22 @@ export function ToothDetailPanel({
                                 : '0.00'}
                           </p>
                         </div>
+                        {procedure.notes && procedure.notes.length > 0 && (
+                          <div className="mt-4 space-y-2">
+                            <h5 className="font-medium text-sm">Progress Notes</h5>
+                            {procedure.notes.map((note) => (
+                              <div key={note.id} className="bg-gray-50 p-2 rounded text-sm">
+                                <div className="flex justify-between items-start">
+                                  <p>{note.note}</p>
+                                  <div className="text-xs text-gray-500">
+                                    <p>{format(parseISO(note.appointment_date), "MMM d, yyyy")}</p>
+                                    <p>By {note.created_by}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -972,6 +1042,80 @@ export function ToothDetailPanel({
           </div>
         </TabsContent>
       </Tabs>
+      <Dialog open={showAddNoteDialog} onOpenChange={setShowAddNoteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Progress Note</DialogTitle>
+            <DialogDescription>
+              Add a progress note for this procedure
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...noteForm}>
+            <form onSubmit={noteForm.handleSubmit(handleAddNoteSubmit)} className="space-y-4">
+              <FormField
+                control={noteForm.control}
+                name="note"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Note</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter progress note" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={noteForm.control}
+                name="appointment_date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Appointment Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <UICalendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button type="submit">Add Note</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

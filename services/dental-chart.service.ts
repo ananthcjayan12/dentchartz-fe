@@ -25,12 +25,21 @@ export interface ToothCondition {
   updated_by: string;
 }
 
+export interface ProcedureNote {
+  id: number;
+  note: string;
+  appointment_date: string;
+  created_by: string;
+  created_at: string;
+}
+
 export interface ToothProcedure {
   id: number;
   procedure_name: string;
   procedure_code: string;
   surface: string;
-  notes?: string;
+  notes: ProcedureNote[];
+  description: string;
   date_performed: string;
   price: string | number;
   status: string;
@@ -164,8 +173,27 @@ export const dentalChartService = {
   },
 
   // Get chart history
-  getChartHistory: async (clinicId: string, patientId: string): Promise<ChartHistoryResponse> => {
-    return apiGet(`/clinics/${clinicId}/patients/${patientId}/dental-chart/history/`);
+  getChartHistory: async (
+    clinicId: string,
+    patientId: string,
+    filters?: {
+      tooth_number?: string;
+      category?: 'conditions' | 'procedures';
+      start_date?: string;
+      end_date?: string;
+    }
+  ): Promise<ChartHistoryResponse> => {
+    const queryParams = new URLSearchParams();
+    if (filters?.tooth_number) queryParams.append('tooth_number', filters.tooth_number);
+    if (filters?.category) queryParams.append('category', filters.category);
+    if (filters?.start_date) queryParams.append('start_date', filters.start_date);
+    if (filters?.end_date) queryParams.append('end_date', filters.end_date);
+
+    const url = `/clinics/${clinicId}/patients/${patientId}/dental-chart/history/${
+      queryParams.toString() ? `?${queryParams.toString()}` : ''
+    }`;
+
+    return apiGet(url);
   },
 
   // Update tooth condition
@@ -233,6 +261,23 @@ export const dentalChartService = {
   ): Promise<void> => {
     return apiDelete(
       `/clinics/${clinicId}/patients/${patientId}/dental-chart/tooth/${toothNumber}/procedure/${procedureId}/`
+    );
+  },
+
+  // Add procedure note
+  addProcedureNote: async (
+    clinicId: string,
+    patientId: string,
+    toothNumber: string,
+    procedureId: number,
+    data: {
+      note: string;
+      appointment_date: string;
+    }
+  ): Promise<ProcedureNote> => {
+    return apiPost(
+      `/clinics/${clinicId}/patients/${patientId}/dental-chart/tooth/${toothNumber}/procedure/${procedureId}/notes/`,
+      data
     );
   }
 };
