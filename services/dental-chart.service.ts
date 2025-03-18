@@ -196,6 +196,44 @@ export const dentalChartService = {
     return apiDelete(
       `/clinics/${clinicId}/patients/${patientId}/dental-chart/tooth/${toothNumber}/condition/${conditionId}/`
     );
+  },
+
+  // Update tooth procedure
+  updateToothProcedure: async (
+    clinicId: string,
+    patientId: string,
+    toothNumber: number,
+    procedureId: number,
+    updateData: {
+      surface?: string;
+      notes?: string;
+      date_performed?: string;
+      price?: number | string;
+      status?: string;
+    }
+  ): Promise<ToothProcedure> => {
+    // Ensure price is a number before sending to API
+    const payload = {
+      ...updateData,
+      price: updateData.price ? Number(updateData.price) : undefined
+    };
+
+    return apiPatch(
+      `/clinics/${clinicId}/patients/${patientId}/dental-chart/tooth/${toothNumber}/procedure/${procedureId}/`,
+      payload
+    );
+  },
+
+  // Delete tooth procedure
+  deleteToothProcedure: async (
+    clinicId: string,
+    patientId: string,
+    toothNumber: number,
+    procedureId: number
+  ): Promise<void> => {
+    return apiDelete(
+      `/clinics/${clinicId}/patients/${patientId}/dental-chart/tooth/${toothNumber}/procedure/${procedureId}/`
+    );
   }
 };
 

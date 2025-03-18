@@ -230,6 +230,58 @@ export default function PatientDentalChartPage() {
     }
   };
 
+  const handleUpdateProcedure = async (
+    procedureId: number,
+    updateData: {
+      surface?: string;
+      notes?: string;
+      date_performed?: string;
+      price?: number;
+      status?: string;
+    }
+  ) => {
+    if (!currentClinic?.id || !selectedTooth) return;
+    
+    try {
+      await dentalChartService.updateToothProcedure(
+        currentClinic.id.toString(),
+        patientId as string,
+        selectedTooth.number,
+        procedureId,
+        updateData
+      );
+      
+      // Fetch updated dental chart
+      await fetchDentalChart();
+      
+      toast.success("Procedure updated successfully");
+    } catch (error) {
+      console.error("Error updating procedure:", error);
+      toast.error("Failed to update procedure");
+    }
+  };
+
+  const handleDeleteProcedure = async (procedureId: number) => {
+    if (!currentClinic?.id || !selectedTooth) return;
+    
+    try {
+      await dentalChartService.deleteToothProcedure(
+        currentClinic.id.toString(),
+        patientId as string,
+        selectedTooth.number,
+        procedureId
+      );
+      
+      // Fetch updated dental chart
+      await fetchDentalChart();
+      
+      toast.success("Procedure deleted successfully");
+    } catch (error) {
+      console.error("Error deleting procedure:", error);
+      toast.error("Failed to delete procedure");
+    }
+  };
+
   return (
     <div className="container mx-auto py-6">
       <div className="flex items-center justify-between mb-6">
@@ -307,6 +359,12 @@ export default function PatientDentalChartPage() {
                         }}
                         onAddProcedure={(procedureData) => {
                           handleAddProcedure(selectedTooth.number, procedureData);
+                        }}
+                        onUpdateProcedure={(procedureId, updateData) => {
+                          handleUpdateProcedure(procedureId, updateData);
+                        }}
+                        onDeleteProcedure={(procedureId) => {
+                          handleDeleteProcedure(procedureId);
                         }}
                         onClose={() => setSelectedTooth(null)}
                       />

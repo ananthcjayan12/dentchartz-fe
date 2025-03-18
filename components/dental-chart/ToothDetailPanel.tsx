@@ -90,6 +90,18 @@ interface ToothDetailPanelProps {
     }
   ) => void;
   onDeleteCondition: (conditionId: number) => void;
+  onUpdateProcedure?: (
+    procedureId: number,
+    data: {
+      surface?: string;
+      notes?: string;
+      date_performed?: string;
+      price?: number;
+      status?: string;
+    }
+  ) => void;
+  onDeleteProcedure?: (procedureId: number) => void;
+  onClose?: () => void;
 }
 
 const conditionFormSchema = z.object({
@@ -139,6 +151,9 @@ export function ToothDetailPanel({
   onAddProcedure,
   onUpdateCondition,
   onDeleteCondition,
+  onUpdateProcedure = () => {},
+  onDeleteProcedure = () => {},
+  onClose,
 }: ToothDetailPanelProps) {
   const [activeTab, setActiveTab] = useState("conditions");
   const [showAddConditionDialog, setShowAddConditionDialog] = useState(false);
@@ -146,6 +161,7 @@ export function ToothDetailPanel({
   const [editingCondition, setEditingCondition] = useState<ToothCondition | null>(null);
   const [isCustomCondition, setIsCustomCondition] = useState(false);
   const [isCustomProcedure, setIsCustomProcedure] = useState(false);
+  const [editingProcedure, setEditingProcedure] = useState<ToothProcedure | null>(null);
   
   // Update the allConditions useMemo to handle the API response format
   const allConditions = useMemo(() => {
@@ -249,29 +265,47 @@ export function ToothDetailPanel({
   };
   
   const handleAddProcedureSubmit = (data: z.infer<typeof procedureFormSchema>) => {
-    let procedureData: any = {
-      surface: data.surface,
-      notes: data.notes,
-      date_performed: format(data.date_performed, "yyyy-MM-dd"),
-      price: data.price || 0,
-      status: data.status,
-    };
-    
-    if (data.procedure_id === "custom") {
-      // Handle custom procedure
-      procedureData.custom_name = data.custom_procedure;
-      procedureData.custom_code = data.custom_code || `CUST${Math.floor(Math.random() * 1000)}`;
-      procedureData.custom_description = data.custom_description || `Custom procedure: ${data.custom_procedure}`;
+    if (editingProcedure) {
+      console.log("Updating procedure:", editingProcedure.id, data);
+      
+      if (typeof onUpdateProcedure !== 'function') {
+        console.error("onUpdateProcedure is not a function or not provided!");
+        return;
+      }
+      
+      // Handle update
+      onUpdateProcedure(editingProcedure.id, {
+        surface: data.surface,
+        notes: data.notes,
+        date_performed: format(data.date_performed, "yyyy-MM-dd"),
+        price: data.price,
+        status: data.status,
+      });
     } else {
-      // Handle standard procedure
-      // Convert string to number if needed
-      procedureData.procedure_id = typeof data.procedure_id === 'string' 
-        ? parseInt(data.procedure_id) 
-        : data.procedure_id;
+      // Handle create (existing code)
+      let procedureData: any = {
+        surface: data.surface,
+        notes: data.notes,
+        date_performed: format(data.date_performed, "yyyy-MM-dd"),
+        price: data.price,
+        status: data.status,
+      };
+      
+      if (data.procedure_id === "custom") {
+        // Handle custom procedure
+        procedureData.custom_name = data.custom_procedure;
+        procedureData.custom_code = data.custom_code || `CUST${Math.floor(Math.random() * 1000)}`;
+        procedureData.custom_description = data.custom_description || "";
+      } else {
+        // Handle standard procedure
+        procedureData.procedure_id = data.procedure_id as number;
+      }
+      
+      onAddProcedure(procedureData);
     }
     
-    onAddProcedure(procedureData);
     setShowAddProcedureDialog(false);
+    setEditingProcedure(null);
     procedureForm.reset();
   };
   
@@ -291,6 +325,39 @@ export function ToothDetailPanel({
       onDeleteCondition(conditionId);
     }
   };
+  
+  const handleEditProcedure = (procedure: ToothProcedure) => {
+    setEditingProcedure(procedure);
+    procedureForm.reset({
+      procedure_id: procedure.procedure_id,
+      surface: procedure.surface,
+      notes: procedure.notes,
+      date_performed: parseISO(procedure.date_performed),
+      price: typeof procedure.price === 'string' ? parseFloat(procedure.price) : procedure.price,
+      status: procedure.status,
+    });
+    setShowAddProcedureDialog(true);
+  };
+  
+  const handleDeleteProcedure = (procedureId: number) => {
+    console.log("Delete procedure called with ID:", procedureId);
+    
+    if (typeof onDeleteProcedure !== 'function') {
+      console.error("onDeleteProcedure is not a function or not provided!");
+      return;
+    }
+    
+    if (confirm("Are you sure you want to remove this procedure?")) {
+      onDeleteProcedure(procedureId);
+    }
+  };
+  
+  useEffect(() => {
+    console.log("ToothDetailPanel props:", {
+      onUpdateProcedure: typeof onUpdateProcedure,
+      onDeleteProcedure: typeof onDeleteProcedure
+    });
+  }, [onUpdateProcedure, onDeleteProcedure]);
   
   return (
     <div>
@@ -567,16 +634,29 @@ export function ToothDetailPanel({
               <h3 className="text-lg font-medium">Procedures</h3>
               <Dialog open={showAddProcedureDialog} onOpenChange={setShowAddProcedureDialog}>
                 <DialogTrigger asChild>
-                  <Button size="sm">
+                  <Button size="sm" onClick={() => {
+                    setEditingProcedure(null);
+                    procedureForm.reset({
+                      surface: "",
+                      notes: "",
+                      date_performed: new Date(),
+                      price: 0,
+                      status: "planned",
+                    });
+                  }}>
                     <Plus className="h-4 w-4 mr-1" />
                     Add Procedure
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Add New Procedure</DialogTitle>
+                    <DialogTitle>
+                      {editingProcedure ? "Edit Procedure" : "Add New Procedure"}
+                    </DialogTitle>
                     <DialogDescription>
-                      Record a procedure performed on this tooth
+                      {editingProcedure 
+                        ? "Update the details of this procedure" 
+                        : "Add a new procedure to this tooth"}
                     </DialogDescription>
                   </DialogHeader>
                   
@@ -834,7 +914,22 @@ export function ToothDetailPanel({
                       <div>
                         <div className="flex justify-between">
                           <h4 className="font-medium">{procedure.procedure_name}</h4>
-                          <Badge>{procedure.procedure_code}</Badge>
+                          <div className="flex space-x-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => handleEditProcedure(procedure)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => handleDeleteProcedure(procedure.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                         <p className="text-sm text-gray-500">
                           Surface: <Badge variant="outline">{procedure.surface}</Badge>
