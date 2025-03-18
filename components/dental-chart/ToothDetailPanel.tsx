@@ -71,6 +71,7 @@ interface ToothDetailPanelProps {
     surface: string;
     notes?: string;
     severity?: string;
+    dentition_type?: 'permanent' | 'primary';
   }) => void;
   onAddProcedure: (data: {
     procedure_id: number;
@@ -221,38 +222,29 @@ export function ToothDetailPanel({
   }, [selectedProcedureId, allProcedures, procedureForm]);
   
   const handleAddConditionSubmit = (data: z.infer<typeof conditionFormSchema>) => {
-    console.log("Form submitted with data:", data);
-    
-    let conditionData: any = {
-      surface: data.surface,
-      notes: data.notes,
-      severity: data.severity,
-    };
-    
     if (data.condition_id === "custom") {
       // Handle custom condition
-      conditionData.custom_name = data.custom_condition;
-      conditionData.custom_code = data.custom_code || `CUST${Math.floor(Math.random() * 1000)}`;
-      conditionData.custom_description = data.notes || "";
+      onAddCondition({
+        custom_name: data.custom_condition,
+        custom_code: data.custom_code || `CUST${Math.floor(Math.random() * 1000)}`,
+        custom_description: data.custom_description || "",
+        surface: data.surface,
+        notes: data.notes,
+        severity: data.severity as 'mild' | 'moderate' | 'severe',
+        dentition_type: /^[A-Z]$/.test(tooth.number) ? 'primary' : 'permanent'
+      });
     } else {
       // Handle standard condition
-      conditionData.condition_id = typeof data.condition_id === 'string' 
-        ? parseInt(data.condition_id) 
-        : data.condition_id;
-      
-      // Find the selected condition to include additional data if needed
-      const selectedCondition = allConditions.find(c => c.id === conditionData.condition_id);
-      if (selectedCondition) {
-        conditionData.condition_name = selectedCondition.name;
-        conditionData.condition_code = selectedCondition.code;
-      }
+      onAddCondition({
+        condition_id: data.condition_id as number,
+        surface: data.surface,
+        notes: data.notes,
+        severity: data.severity as 'mild' | 'moderate' | 'severe',
+        dentition_type: /^[A-Z]$/.test(tooth.number) ? 'primary' : 'permanent'
+      });
     }
     
-    console.log("Sending condition data to API:", conditionData);
-    onAddCondition(conditionData);
-    
     setShowAddConditionDialog(false);
-    setEditingCondition(null);
     conditionForm.reset();
   };
   

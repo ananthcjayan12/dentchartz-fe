@@ -1,10 +1,10 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from "./api.utils";
 
 export interface Tooth {
-  number: number;
+  number: string;
   name: string;
   quadrant: string;
-  type: string;
+  dentition_type: 'permanent' | 'primary';
   conditions: ToothCondition[];
   procedures: ToothProcedure[];
 }
@@ -94,13 +94,11 @@ export interface ProceduresResponse {
 }
 
 export interface AddToothConditionData {
-  condition_id?: number;
-  custom_name?: string;
-  custom_code?: string;
-  custom_description?: string;
+  condition_id: number;
   surface: string;
   notes?: string;
-  severity?: string;
+  severity?: 'mild' | 'moderate' | 'severe';
+  dentition_type: 'permanent' | 'primary';
 }
 
 export const dentalChartService = {
@@ -123,33 +121,18 @@ export const dentalChartService = {
   addToothCondition: async (
     clinicId: string,
     patientId: string,
-    toothNumber: number,
+    toothNumber: string,
     conditionData: AddToothConditionData
   ): Promise<ToothCondition> => {
-    console.log("Adding tooth condition:", {
-      clinicId,
-      patientId,
-      toothNumber,
-      conditionData
-    });
-
     const url = `/clinics/${clinicId}/patients/${patientId}/dental-chart/tooth/${toothNumber}/condition/`;
     
-    try {
-      const response = await apiPost(url, conditionData);
-      console.log("API response:", response);
-      
-      // Ensure we're returning a properly formatted ToothCondition object
-      // This helps prevent "Cannot read properties of undefined (reading 'filter')" errors
-      if (!response || typeof response !== 'object') {
-        throw new Error('Invalid response format from API');
-      }
-      
-      return response;
-    } catch (error) {
-      console.error("Error in addToothCondition:", error);
-      throw error;
-    }
+    // Ensure dentition_type is set
+    const payload = {
+      ...conditionData,
+      dentition_type: /^[A-Z]$/.test(toothNumber) ? 'primary' : 'permanent'
+    };
+
+    return apiPost(url, payload);
   },
 
   // Add procedure to tooth

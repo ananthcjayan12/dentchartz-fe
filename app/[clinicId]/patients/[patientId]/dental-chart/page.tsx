@@ -5,6 +5,7 @@ import { dentalChartService } from "@/services/dental-chart.service";
 import { DentalChartViewer } from "@/components/dental-chart/DentalChartViewer";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { AddToothConditionData } from "@/types/dental-chart.service";
 
 export default function PatientDentalChartPage() {
   const params = useParams();
@@ -38,6 +39,25 @@ export default function PatientDentalChartPage() {
   const handleToothSelect = (tooth) => {
     console.log("Selected tooth:", tooth);
     setSelectedTooth(tooth);
+  };
+  
+  const handleAddCondition = async (conditionData: AddToothConditionData) => {
+    if (!selectedTooth || !currentClinic?.id || !params.patientId) return;
+
+    try {
+      const response = await dentalChartService.addToothCondition(
+        currentClinic.id.toString(),
+        params.patientId.toString(),
+        selectedTooth.number,
+        conditionData
+      );
+      
+      // Refresh the dental chart after adding condition
+      await fetchDentalChart();
+    } catch (error) {
+      console.error("Error adding condition:", error);
+      // Show error toast
+    }
   };
   
   if (isLoading) {

@@ -141,46 +141,239 @@ class DentalChartViewSet(ClinicViewSetMixin, GenericViewSet):
             # Create standard adult dentition (32 teeth)
             teeth_data = [
                 # Upper right quadrant (teeth 1-8)
-                {'number': 1, 'name': 'Upper Right Third Molar', 'quadrant': 'upper_right', 'type': 'molar'},
-                {'number': 2, 'name': 'Upper Right Second Molar', 'quadrant': 'upper_right', 'type': 'molar'},
-                {'number': 3, 'name': 'Upper Right First Molar', 'quadrant': 'upper_right', 'type': 'molar'},
-                {'number': 4, 'name': 'Upper Right Second Premolar', 'quadrant': 'upper_right', 'type': 'premolar'},
-                {'number': 5, 'name': 'Upper Right First Premolar', 'quadrant': 'upper_right', 'type': 'premolar'},
-                {'number': 6, 'name': 'Upper Right Canine', 'quadrant': 'upper_right', 'type': 'canine'},
-                {'number': 7, 'name': 'Upper Right Lateral Incisor', 'quadrant': 'upper_right', 'type': 'incisor'},
-                {'number': 8, 'name': 'Upper Right Central Incisor', 'quadrant': 'upper_right', 'type': 'incisor'},
+                {
+                    'number': '1',
+                    'universal_number': 1,
+                    'name': 'Upper Right Third Molar',
+                    'quadrant': 'upper_right',
+                    'dentition_type': 'permanent'
+                },
+                {
+                    'number': '2',
+                    'universal_number': 2,
+                    'name': 'Upper Right Second Molar',
+                    'quadrant': 'upper_right',
+                    'dentition_type': 'permanent'
+                },
+                {
+                    'number': '3',
+                    'universal_number': 3,
+                    'name': 'Upper Right First Molar',
+                    'quadrant': 'upper_right',
+                    'dentition_type': 'permanent'
+                },
+                {
+                    'number': '4',
+                    'universal_number': 4,
+                    'name': 'Upper Right Second Premolar',
+                    'quadrant': 'upper_right',
+                    'dentition_type': 'premolar'
+                },
+                {
+                    'number': '5',
+                    'universal_number': 5,
+                    'name': 'Upper Right First Premolar',
+                    'quadrant': 'upper_right',
+                    'dentition_type': 'premolar'
+                },
+                {
+                    'number': '6',
+                    'universal_number': 6,
+                    'name': 'Upper Right Canine',
+                    'quadrant': 'upper_right',
+                    'dentition_type': 'canine'
+                },
+                {
+                    'number': '7',
+                    'universal_number': 7,
+                    'name': 'Upper Right Lateral Incisor',
+                    'quadrant': 'upper_right',
+                    'dentition_type': 'incisor'
+                },
+                {
+                    'number': '8',
+                    'universal_number': 8,
+                    'name': 'Upper Right Central Incisor',
+                    'quadrant': 'upper_right',
+                    'dentition_type': 'incisor'
+                },
                 
                 # Upper left quadrant (teeth 9-16)
-                {'number': 9, 'name': 'Upper Left Central Incisor', 'quadrant': 'upper_left', 'type': 'incisor'},
-                {'number': 10, 'name': 'Upper Left Lateral Incisor', 'quadrant': 'upper_left', 'type': 'incisor'},
-                {'number': 11, 'name': 'Upper Left Canine', 'quadrant': 'upper_left', 'type': 'canine'},
-                {'number': 12, 'name': 'Upper Left First Premolar', 'quadrant': 'upper_left', 'type': 'premolar'},
-                {'number': 13, 'name': 'Upper Left Second Premolar', 'quadrant': 'upper_left', 'type': 'premolar'},
-                {'number': 14, 'name': 'Upper Left First Molar', 'quadrant': 'upper_left', 'type': 'molar'},
-                {'number': 15, 'name': 'Upper Left Second Molar', 'quadrant': 'upper_left', 'type': 'molar'},
-                {'number': 16, 'name': 'Upper Left Third Molar', 'quadrant': 'upper_left', 'type': 'molar'},
+                {
+                    'number': '9',
+                    'universal_number': 9,
+                    'name': 'Upper Left Central Incisor',
+                    'quadrant': 'upper_left',
+                    'dentition_type': 'incisor'
+                },
+                {
+                    'number': '10',
+                    'universal_number': 10,
+                    'name': 'Upper Left Lateral Incisor',
+                    'quadrant': 'upper_left',
+                    'dentition_type': 'incisor'
+                },
+                {
+                    'number': '11',
+                    'universal_number': 11,
+                    'name': 'Upper Left Canine',
+                    'quadrant': 'upper_left',
+                    'dentition_type': 'canine'
+                },
+                {
+                    'number': '12',
+                    'universal_number': 12,
+                    'name': 'Upper Left First Premolar',
+                    'quadrant': 'upper_left',
+                    'dentition_type': 'premolar'
+                },
+                {
+                    'number': '13',
+                    'universal_number': 13,
+                    'name': 'Upper Left Second Premolar',
+                    'quadrant': 'upper_left',
+                    'dentition_type': 'premolar'
+                },
+                {
+                    'number': '14',
+                    'universal_number': 14,
+                    'name': 'Upper Left First Molar',
+                    'quadrant': 'upper_left',
+                    'dentition_type': 'molar'
+                },
+                {
+                    'number': '15',
+                    'universal_number': 15,
+                    'name': 'Upper Left Second Molar',
+                    'quadrant': 'upper_left',
+                    'dentition_type': 'molar'
+                },
+                {
+                    'number': '16',
+                    'universal_number': 16,
+                    'name': 'Upper Left Third Molar',
+                    'quadrant': 'upper_left',
+                    'dentition_type': 'molar'
+                },
                 
                 # Lower left quadrant (teeth 17-24)
-                {'number': 17, 'name': 'Lower Left Third Molar', 'quadrant': 'lower_left', 'type': 'molar'},
-                {'number': 18, 'name': 'Lower Left Second Molar', 'quadrant': 'lower_left', 'type': 'molar'},
-                {'number': 19, 'name': 'Lower Left First Molar', 'quadrant': 'lower_left', 'type': 'molar'},
-                {'number': 20, 'name': 'Lower Left Second Premolar', 'quadrant': 'lower_left', 'type': 'premolar'},
-                {'number': 21, 'name': 'Lower Left First Premolar', 'quadrant': 'lower_left', 'type': 'premolar'},
-                {'number': 22, 'name': 'Lower Left Canine', 'quadrant': 'lower_left', 'type': 'canine'},
-                {'number': 23, 'name': 'Lower Left Lateral Incisor', 'quadrant': 'lower_left', 'type': 'incisor'},
-                {'number': 24, 'name': 'Lower Left Central Incisor', 'quadrant': 'lower_left', 'type': 'incisor'},
+                {
+                    'number': '17',
+                    'universal_number': 17,
+                    'name': 'Lower Left Third Molar',
+                    'quadrant': 'lower_left',
+                    'dentition_type': 'molar'
+                },
+                {
+                    'number': '18',
+                    'universal_number': 18,
+                    'name': 'Lower Left Second Molar',
+                    'quadrant': 'lower_left',
+                    'dentition_type': 'molar'
+                },
+                {
+                    'number': '19',
+                    'universal_number': 19,
+                    'name': 'Lower Left First Molar',
+                    'quadrant': 'lower_left',
+                    'dentition_type': 'molar'
+                },
+                {
+                    'number': '20',
+                    'universal_number': 20,
+                    'name': 'Lower Left Second Premolar',
+                    'quadrant': 'lower_left',
+                    'dentition_type': 'premolar'
+                },
+                {
+                    'number': '21',
+                    'universal_number': 21,
+                    'name': 'Lower Left First Premolar',
+                    'quadrant': 'lower_left',
+                    'dentition_type': 'premolar'
+                },
+                {
+                    'number': '22',
+                    'universal_number': 22,
+                    'name': 'Lower Left Canine',
+                    'quadrant': 'lower_left',
+                    'dentition_type': 'canine'
+                },
+                {
+                    'number': '23',
+                    'universal_number': 23,
+                    'name': 'Lower Left Lateral Incisor',
+                    'quadrant': 'lower_left',
+                    'dentition_type': 'incisor'
+                },
+                {
+                    'number': '24',
+                    'universal_number': 24,
+                    'name': 'Lower Left Central Incisor',
+                    'quadrant': 'lower_left',
+                    'dentition_type': 'incisor'
+                },
                 
                 # Lower right quadrant (teeth 25-32)
-                {'number': 25, 'name': 'Lower Right Central Incisor', 'quadrant': 'lower_right', 'type': 'incisor'},
-                {'number': 26, 'name': 'Lower Right Lateral Incisor', 'quadrant': 'lower_right', 'type': 'incisor'},
-                {'number': 27, 'name': 'Lower Right Canine', 'quadrant': 'lower_right', 'type': 'canine'},
-                {'number': 28, 'name': 'Lower Right First Premolar', 'quadrant': 'lower_right', 'type': 'premolar'},
-                {'number': 29, 'name': 'Lower Right Second Premolar', 'quadrant': 'lower_right', 'type': 'premolar'},
-                {'number': 30, 'name': 'Lower Right First Molar', 'quadrant': 'lower_right', 'type': 'molar'},
-                {'number': 31, 'name': 'Lower Right Second Molar', 'quadrant': 'lower_right', 'type': 'molar'},
-                {'number': 32, 'name': 'Lower Right Third Molar', 'quadrant': 'lower_right', 'type': 'molar'},
+                {
+                    'number': '25',
+                    'universal_number': 25,
+                    'name': 'Lower Right Central Incisor',
+                    'quadrant': 'lower_right',
+                    'dentition_type': 'incisor'
+                },
+                {
+                    'number': '26',
+                    'universal_number': 26,
+                    'name': 'Lower Right Lateral Incisor',
+                    'quadrant': 'lower_right',
+                    'dentition_type': 'incisor'
+                },
+                {
+                    'number': '27',
+                    'universal_number': 27,
+                    'name': 'Lower Right Canine',
+                    'quadrant': 'lower_right',
+                    'dentition_type': 'canine'
+                },
+                {
+                    'number': '28',
+                    'universal_number': 28,
+                    'name': 'Lower Right First Premolar',
+                    'quadrant': 'lower_right',
+                    'dentition_type': 'premolar'
+                },
+                {
+                    'number': '29',
+                    'universal_number': 29,
+                    'name': 'Lower Right Second Premolar',
+                    'quadrant': 'lower_right',
+                    'dentition_type': 'premolar'
+                },
+                {
+                    'number': '30',
+                    'universal_number': 30,
+                    'name': 'Lower Right First Molar',
+                    'quadrant': 'lower_right',
+                    'dentition_type': 'molar'
+                },
+                {
+                    'number': '31',
+                    'universal_number': 31,
+                    'name': 'Lower Right Second Molar',
+                    'quadrant': 'lower_right',
+                    'dentition_type': 'molar'
+                },
+                {
+                    'number': '32',
+                    'universal_number': 32,
+                    'name': 'Lower Right Third Molar',
+                    'quadrant': 'lower_right',
+                    'dentition_type': 'molar'
+                },
             ]
             
+            # Create teeth records
             for tooth_data in teeth_data:
                 DentalChartTooth.objects.create(patient=patient, **tooth_data)
     
