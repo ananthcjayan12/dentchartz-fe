@@ -860,7 +860,13 @@ export function ToothDetailPanel({
                           <p className="text-xs text-gray-400">
                             Performed by {procedure.performed_by}
                           </p>
-                          <p className="font-medium">${(procedure as ExtendedDentalProcedure).price?.toFixed(2) || 0}</p>
+                          <p className="font-medium">
+                            ${typeof procedure.price === 'number' 
+                              ? procedure.price.toFixed(2) 
+                              : typeof procedure.price === 'string' 
+                                ? parseFloat(procedure.price).toFixed(2) 
+                                : '0.00'}
+                          </p>
                         </div>
                       </div>
                     </CardContent>

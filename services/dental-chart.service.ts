@@ -32,7 +32,7 @@ export interface ToothProcedure {
   surface: string;
   notes?: string;
   date_performed: string;
-  price: string;
+  price: string | number;
   status: string;
   performed_by: string;
 }
@@ -141,19 +141,25 @@ export const dentalChartService = {
   addToothProcedure: async (
     clinicId: string,
     patientId: string,
-    toothNumber: number,
+    toothNumber: string,
     procedureData: {
       procedure_id: number;
       surface: string;
       notes?: string;
       date_performed: string;
-      price?: number;
+      price?: number | string;
       status: string;
     }
   ): Promise<ToothProcedure> => {
+    // Ensure price is a number before sending to API
+    const payload = {
+      ...procedureData,
+      price: procedureData.price ? Number(procedureData.price) : undefined
+    };
+
     return apiPost(
       `/clinics/${clinicId}/patients/${patientId}/dental-chart/tooth/${toothNumber}/procedure/`,
-      procedureData
+      payload
     );
   },
 

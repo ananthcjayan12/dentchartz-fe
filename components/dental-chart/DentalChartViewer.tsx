@@ -208,6 +208,100 @@ export function DentalChartViewer({
     }
   };
   
+  // For the standard dental chart layout, we'll create a new rendering approach
+  const renderStandardDentalChart = () => {
+    // Define the exact order of teeth for the upper row: 18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28
+    const upperRowOrder = ['18', '17', '16', '15', '14', '13', '12', '11', '21', '22', '23', '24', '25', '26', '27', '28'];
+    
+    // Define the exact order of teeth for the lower row: 48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38
+    const lowerRowOrder = ['48', '47', '46', '45', '44', '43', '42', '41', '31', '32', '33', '34', '35', '36', '37', '38'];
+    
+    // Create a map of teeth by number for quick lookup
+    const teethMap = safeTeeth.reduce((map, tooth) => {
+      map[tooth.number] = tooth;
+      return map;
+    }, {});
+    
+    // Create the upper and lower rows based on the defined order
+    const upperRow = upperRowOrder.map(number => 
+      teethMap[number] || { 
+        number, 
+        name: `Tooth ${number}`, 
+        quadrant: '', 
+        dentition_type: 'permanent',
+        conditions: [],
+        procedures: []
+      }
+    );
+    
+    const lowerRow = lowerRowOrder.map(number => 
+      teethMap[number] || { 
+        number, 
+        name: `Tooth ${number}`, 
+        quadrant: '', 
+        dentition_type: 'permanent',
+        conditions: [],
+        procedures: []
+      }
+    );
+    
+    return (
+      <div className="mx-auto max-w-4xl">
+        {/* Upper row */}
+        <div className="grid grid-cols-16 gap-1 mb-4">
+          {upperRow.map(tooth => (
+            <Tooltip key={tooth.number}>
+              <TooltipTrigger asChild>
+                <button
+                  className={cn(
+                    "w-10 h-14 border rounded-t-lg flex items-center justify-center font-bold text-sm relative",
+                    getToothColor(tooth),
+                    selectedTooth?.number === tooth.number && "ring-2 ring-blue-500"
+                  )}
+                  onClick={() => onToothSelect(tooth)}
+                >
+                  {tooth.number}
+                  {tooth.conditions?.length > 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {getToothTooltip(tooth)}
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+        
+        {/* Lower row */}
+        <div className="grid grid-cols-16 gap-1">
+          {lowerRow.map(tooth => (
+            <Tooltip key={tooth.number}>
+              <TooltipTrigger asChild>
+                <button
+                  className={cn(
+                    "w-10 h-14 border rounded-b-lg flex items-center justify-center font-bold text-sm relative",
+                    getToothColor(tooth),
+                    selectedTooth?.number === tooth.number && "ring-2 ring-blue-500"
+                  )}
+                  onClick={() => onToothSelect(tooth)}
+                >
+                  {tooth.number}
+                  {tooth.conditions?.length > 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {getToothTooltip(tooth)}
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+      </div>
+    );
+  };
+  
   return (
     <div className="dental-chart">
       <div className="mb-4 flex justify-between items-center">
@@ -229,158 +323,163 @@ export function DentalChartViewer({
       )}
       
       {safeTeeth.length > 0 && (
-        <div className="mx-auto max-w-3xl">
-          {/* Quadrant labels */}
-          <div className="grid grid-cols-2 text-center mb-2">
-            <div className="text-sm font-medium">Upper Right Quadrant</div>
-            <div className="text-sm font-medium">Upper Left Quadrant</div>
-          </div>
-          
-          {/* Upper jaw */}
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            {/* Upper Right Quadrant */}
-            <div className="flex justify-end">
-              <div className="grid grid-cols-8 gap-1">
-                {upperRight.map(tooth => (
-                  <Tooltip key={tooth.number}>
-                    <TooltipTrigger asChild>
-                      <button
-                        className={cn(
-                          "w-10 h-14 border rounded-t-lg flex items-center justify-center font-bold text-sm",
-                          getToothColor(tooth),
-                          selectedTooth?.number === tooth.number && "ring-2 ring-blue-500"
-                        )}
-                        onClick={() => onToothSelect(tooth)}
-                      >
-                        {tooth.number}
-                        {tooth.conditions.length > 0 && (
-                          <span className="condition-indicator"></span>
-                        )}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {getToothTooltip(tooth)}
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
+        isPediatric ? (
+          <div className="mx-auto max-w-3xl">
+            {/* Quadrant labels */}
+            <div className="grid grid-cols-2 text-center mb-2">
+              <div className="text-sm font-medium">Upper Right Quadrant</div>
+              <div className="text-sm font-medium">Upper Left Quadrant</div>
+            </div>
+            
+            {/* Upper jaw */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {/* Upper Right Quadrant */}
+              <div className="flex justify-end">
+                <div className="grid grid-cols-8 gap-1">
+                  {upperRight.map(tooth => (
+                    <Tooltip key={tooth.number}>
+                      <TooltipTrigger asChild>
+                        <button
+                          className={cn(
+                            "w-10 h-14 border rounded-t-lg flex items-center justify-center font-bold text-sm",
+                            getToothColor(tooth),
+                            selectedTooth?.number === tooth.number && "ring-2 ring-blue-500"
+                          )}
+                          onClick={() => onToothSelect(tooth)}
+                        >
+                          {tooth.number}
+                          {tooth.conditions.length > 0 && (
+                            <span className="condition-indicator"></span>
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {getToothTooltip(tooth)}
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Upper Left Quadrant */}
+              <div className="flex justify-start">
+                <div className="grid grid-cols-8 gap-1">
+                  {upperLeft.map(tooth => (
+                    <Tooltip key={tooth.number}>
+                      <TooltipTrigger asChild>
+                        <button
+                          className={cn(
+                            "w-10 h-14 border rounded-t-lg flex items-center justify-center font-bold text-sm",
+                            getToothColor(tooth),
+                            selectedTooth?.number === tooth.number && "ring-2 ring-blue-500"
+                          )}
+                          onClick={() => onToothSelect(tooth)}
+                        >
+                          {tooth.number}
+                          {tooth.conditions.length > 0 && (
+                            <span className="condition-indicator"></span>
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {getToothTooltip(tooth)}
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </div>
               </div>
             </div>
             
-            {/* Upper Left Quadrant */}
-            <div className="flex justify-start">
-              <div className="grid grid-cols-8 gap-1">
-                {upperLeft.map(tooth => (
-                  <Tooltip key={tooth.number}>
-                    <TooltipTrigger asChild>
-                      <button
-                        className={cn(
-                          "w-10 h-14 border rounded-t-lg flex items-center justify-center font-bold text-sm",
-                          getToothColor(tooth),
-                          selectedTooth?.number === tooth.number && "ring-2 ring-blue-500"
-                        )}
-                        onClick={() => onToothSelect(tooth)}
-                      >
-                        {tooth.number}
-                        {tooth.conditions.length > 0 && (
-                          <span className="condition-indicator"></span>
-                        )}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {getToothTooltip(tooth)}
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
+            {/* Lower jaw */}
+            <div className="grid grid-cols-2 gap-2">
+              {/* Lower Right Quadrant */}
+              <div className="flex justify-end">
+                <div className="grid grid-cols-8 gap-1">
+                  {lowerRight.map(tooth => (
+                    <Tooltip key={tooth.number}>
+                      <TooltipTrigger asChild>
+                        <button
+                          className={cn(
+                            "w-10 h-14 border rounded-b-lg flex items-center justify-center font-bold text-sm",
+                            getToothColor(tooth),
+                            selectedTooth?.number === tooth.number && "ring-2 ring-blue-500"
+                          )}
+                          onClick={() => onToothSelect(tooth)}
+                        >
+                          {tooth.number}
+                          {tooth.conditions.length > 0 && (
+                            <span className="condition-indicator"></span>
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {getToothTooltip(tooth)}
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
-          
-          {/* Lower jaw */}
-          <div className="grid grid-cols-2 gap-2">
-            {/* Lower Right Quadrant */}
-            <div className="flex justify-end">
-              <div className="grid grid-cols-8 gap-1">
-                {lowerRight.map(tooth => (
-                  <Tooltip key={tooth.number}>
-                    <TooltipTrigger asChild>
-                      <button
-                        className={cn(
-                          "w-10 h-14 border rounded-b-lg flex items-center justify-center font-bold text-sm",
-                          getToothColor(tooth),
-                          selectedTooth?.number === tooth.number && "ring-2 ring-blue-500"
-                        )}
-                        onClick={() => onToothSelect(tooth)}
-                      >
-                        {tooth.number}
-                        {tooth.conditions.length > 0 && (
-                          <span className="condition-indicator"></span>
-                        )}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {getToothTooltip(tooth)}
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
+              
+              {/* Lower Left Quadrant */}
+              <div className="flex justify-start">
+                <div className="grid grid-cols-8 gap-1">
+                  {lowerLeft.map(tooth => (
+                    <Tooltip key={tooth.number}>
+                      <TooltipTrigger asChild>
+                        <button
+                          className={cn(
+                            "w-10 h-14 border rounded-b-lg flex items-center justify-center font-bold text-sm",
+                            getToothColor(tooth),
+                            selectedTooth?.number === tooth.number && "ring-2 ring-blue-500"
+                          )}
+                          onClick={() => onToothSelect(tooth)}
+                        >
+                          {tooth.number}
+                          {tooth.conditions.length > 0 && (
+                            <span className="condition-indicator"></span>
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {getToothTooltip(tooth)}
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </div>
               </div>
             </div>
             
-            {/* Lower Left Quadrant */}
-            <div className="flex justify-start">
-              <div className="grid grid-cols-8 gap-1">
-                {lowerLeft.map(tooth => (
-                  <Tooltip key={tooth.number}>
-                    <TooltipTrigger asChild>
-                      <button
-                        className={cn(
-                          "w-10 h-14 border rounded-b-lg flex items-center justify-center font-bold text-sm",
-                          getToothColor(tooth),
-                          selectedTooth?.number === tooth.number && "ring-2 ring-blue-500"
-                        )}
-                        onClick={() => onToothSelect(tooth)}
-                      >
-                        {tooth.number}
-                        {tooth.conditions.length > 0 && (
-                          <span className="condition-indicator"></span>
-                        )}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {getToothTooltip(tooth)}
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
-              </div>
+            {/* Quadrant labels */}
+            <div className="grid grid-cols-2 text-center mt-2">
+              <div className="text-sm font-medium">Lower Right Quadrant</div>
+              <div className="text-sm font-medium">Lower Left Quadrant</div>
             </div>
           </div>
-          
-          {/* Quadrant labels */}
-          <div className="grid grid-cols-2 text-center mt-2">
-            <div className="text-sm font-medium">Lower Right Quadrant</div>
-            <div className="text-sm font-medium">Lower Left Quadrant</div>
-          </div>
-          
-          {/* Legend */}
-          <div className="mt-8 flex justify-center space-x-4">
-            <div className="flex items-center">
-              <div className="w-4 h-4 bg-white border rounded mr-2"></div>
-              <span className="text-sm">Healthy</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 bg-red-200 border rounded mr-2"></div>
-              <span className="text-sm">Cavity</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 bg-blue-200 border rounded mr-2"></div>
-              <span className="text-sm">Filling</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 bg-yellow-100 border rounded mr-2"></div>
-              <span className="text-sm">Other Condition</span>
-            </div>
-          </div>
-        </div>
+        ) : (
+          // New standard layout for permanent teeth
+          renderStandardDentalChart()
+        )
       )}
+      
+      {/* Legend */}
+      <div className="mt-8 flex justify-center space-x-4">
+        <div className="flex items-center">
+          <div className="w-4 h-4 bg-white border rounded mr-2"></div>
+          <span className="text-sm">Healthy</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-4 h-4 bg-red-200 border rounded mr-2"></div>
+          <span className="text-sm">Cavity</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-4 h-4 bg-blue-200 border rounded mr-2"></div>
+          <span className="text-sm">Filling</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-4 h-4 bg-yellow-100 border rounded mr-2"></div>
+          <span className="text-sm">Other Condition</span>
+        </div>
+      </div>
     </div>
   );
 } 
