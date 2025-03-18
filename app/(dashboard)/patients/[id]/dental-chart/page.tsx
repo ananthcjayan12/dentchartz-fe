@@ -16,6 +16,8 @@ import { toast } from "sonner";
 import { DentalChartViewer } from "@/components/dental-chart/DentalChartViewer";
 import { ToothDetailPanel } from "@/components/dental-chart/ToothDetailPanel";
 import { ChartHistoryViewer } from "@/components/dental-chart/ChartHistoryViewer";
+import { CondensedChartHistory } from "@/components/dental-chart/CondensedChartHistory";
+import { ProceduresSummary } from "@/components/dental-chart/ProceduresSummary";
 
 export default function PatientDentalChartPage() {
   const router = useRouter();
@@ -334,6 +336,7 @@ export default function PatientDentalChartPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="chart">Dental Chart</TabsTrigger>
+          <TabsTrigger value="procedures">Procedures</TabsTrigger>
           <TabsTrigger value="history">Chart History</TabsTrigger>
         </TabsList>
 
@@ -355,54 +358,58 @@ export default function PatientDentalChartPage() {
                       onToothSelect={handleToothSelect} 
                 selectedTooth={selectedTooth}
                     />
-                </CardContent>
-              </Card>
-            </div>
+                  </CardContent>
+                  <div className="px-6 pb-6">
+                    <Separator className="my-4" />
+                    <CondensedChartHistory patientId={patientId as string} />
+                  </div>
+                </Card>
+              </div>
 
-            <div>
-              <Card>
-                <CardHeader>
-                    <CardTitle>
-                      {selectedTooth ? `Tooth ${selectedTooth.number}: ${selectedTooth.name}` : "Select a Tooth"}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {selectedTooth && (
-                      <ToothDetailPanel
-                        tooth={selectedTooth}
-                        conditions={conditions}
-                        procedures={procedures}
-                        onAddCondition={(conditionData) => {
-                          console.log("onAddCondition callback triggered with:", conditionData);
-                          handleAddCondition(selectedTooth.number.toString(), conditionData);
-                        }}
-                        onUpdateCondition={(conditionId, updateData) => {
-                          handleUpdateCondition(selectedTooth.number, conditionId, updateData);
-                        }}
-                        onDeleteCondition={(conditionId) => {
-                          handleDeleteCondition(selectedTooth.number, conditionId);
-                        }}
-                        onAddProcedure={(procedureData) => {
-                          handleAddProcedure(selectedTooth.number, procedureData);
-                        }}
-                        onUpdateProcedure={(procedureId, updateData) => {
-                          handleUpdateProcedure(procedureId, updateData);
-                        }}
-                        onDeleteProcedure={(procedureId) => {
-                          handleDeleteProcedure(procedureId);
-                        }}
-                        onAddProcedureNote={(procedureId, noteData) => {
-                          handleAddProcedureNote(procedureId, noteData);
-                        }}
-                        clinicId={currentClinic?.id.toString()}
-                        patientId={patientId as string}
-                        onClose={() => setSelectedTooth(null)}
-                      />
-                    )}
-                </CardContent>
-              </Card>
+              <div>
+                <Card>
+                  <CardHeader>
+                      <CardTitle>
+                        {selectedTooth ? `Tooth ${selectedTooth.number}: ${selectedTooth.name}` : "Select a Tooth"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                      {selectedTooth && (
+                        <ToothDetailPanel
+                          tooth={selectedTooth}
+                          conditions={conditions}
+                          procedures={procedures}
+                          onAddCondition={(conditionData) => {
+                            console.log("onAddCondition callback triggered with:", conditionData);
+                            handleAddCondition(selectedTooth.number.toString(), conditionData);
+                          }}
+                          onUpdateCondition={(conditionId, updateData) => {
+                            handleUpdateCondition(selectedTooth.number, conditionId, updateData);
+                          }}
+                          onDeleteCondition={(conditionId) => {
+                            handleDeleteCondition(selectedTooth.number, conditionId);
+                          }}
+                          onAddProcedure={(procedureData) => {
+                            handleAddProcedure(selectedTooth.number, procedureData);
+                          }}
+                          onUpdateProcedure={(procedureId, updateData) => {
+                            handleUpdateProcedure(procedureId, updateData);
+                          }}
+                          onDeleteProcedure={(procedureId) => {
+                            handleDeleteProcedure(procedureId);
+                          }}
+                          onAddProcedureNote={(procedureId, noteData) => {
+                            handleAddProcedureNote(procedureId, noteData);
+                          }}
+                          clinicId={currentClinic?.id.toString()}
+                          patientId={patientId as string}
+                          onClose={() => setSelectedTooth(null)}
+                        />
+                      )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-          </div>
           ) : (
             <div className="text-center py-12">
               <p className="text-gray-500">No dental chart found for this patient</p>
@@ -413,13 +420,30 @@ export default function PatientDentalChartPage() {
           )}
         </TabsContent>
 
+        <TabsContent value="procedures">
+          <Card>
+            <CardHeader>
+              <CardTitle>All Procedures</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {dentalChart ? (
+                <ProceduresSummary patientId={patientId as string} dentalChart={dentalChart} />
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">No procedures found</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="history">
           <Card>
             <CardHeader>
               <CardTitle>Chart History</CardTitle>
             </CardHeader>
             <CardContent>
-              <ChartHistoryViewer patientId={patientId} />
+              <ChartHistoryViewer patientId={patientId as string} />
             </CardContent>
           </Card>
         </TabsContent>
