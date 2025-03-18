@@ -383,9 +383,12 @@ export function ToothDetailPanel({
     if (!selectedProcedureForNote) return;
     
     try {
+      // Format the date to YYYY-MM-DD HH:MM format with default time of 12:00
+      const formattedDate = format(data.appointment_date, "yyyy-MM-dd") + " 12:00";
+      
       await onAddProcedureNote(selectedProcedureForNote, {
         note: data.note,
-        appointment_date: format(data.appointment_date, "yyyy-MM-dd'T'HH:mm:ss")
+        appointment_date: formattedDate
       });
       
       toast.success("Note added successfully");
