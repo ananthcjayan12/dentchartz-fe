@@ -66,9 +66,10 @@ const formSchema = z.object({
 interface AppointmentFormProps {
   appointment?: Appointment;
   onSuccess?: () => void;
+  preSelectedPatientId?: string;
 }
 
-export function AppointmentForm({ appointment, onSuccess }: AppointmentFormProps) {
+export function AppointmentForm({ appointment, onSuccess, preSelectedPatientId }: AppointmentFormProps) {
   const router = useRouter();
   const { currentClinic } = useAuth();
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -84,7 +85,9 @@ export function AppointmentForm({ appointment, onSuccess }: AppointmentFormProps
   const [selectedTime, setSelectedTime] = useState<string>(
     appointment ? appointment.start_time.substring(0, 5) : ""
   );
-  const [patientId, setPatientId] = useState<string>(appointment?.patient.id || "");
+  const [patientId, setPatientId] = useState<string>(
+    preSelectedPatientId || (appointment?.patient.id || "")
+  );
   const [dentistId, setDentistId] = useState<string>(appointment?.dentist.id || "");
   const [status, setStatus] = useState<string>(appointment?.status || "scheduled");
   const [newPatientDialogOpen, setNewPatientDialogOpen] = useState(false);
@@ -92,7 +95,7 @@ export function AppointmentForm({ appointment, onSuccess }: AppointmentFormProps
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      patient_id: appointment?.patient.id || "",
+      patient_id: preSelectedPatientId || (appointment?.patient.id || ""),
       dentist_id: appointment?.dentist.id || "",
       date: appointment?.date ? new Date(appointment.date) : new Date(),
       start_time: appointment?.start_time || "",
@@ -133,6 +136,21 @@ export function AppointmentForm({ appointment, onSuccess }: AppointmentFormProps
         setFilteredPatients(patientsData);
         setDentists(dentistsData);
         
+        // If we have a preSelectedPatientId, find that patient and ensure it's selected
+        if (preSelectedPatientId) {
+          const selectedPatient = patientsData.find(
+            patient => patient.id.toString() === preSelectedPatientId
+          );
+          
+          if (selectedPatient) {
+            setPatientId(selectedPatient.id.toString());
+            form.setValue("patient_id", selectedPatient.id.toString());
+            
+            // Optionally scroll to the selected patient in the list
+            // This would need a ref implementation to work fully
+          }
+        }
+        
         console.log("Patients loaded:", patientsData);
         console.log("Dentists loaded:", dentistsData);
       } catch (error) {
@@ -144,7 +162,7 @@ export function AppointmentForm({ appointment, onSuccess }: AppointmentFormProps
     };
     
     fetchData();
-  }, [currentClinic?.id]);
+  }, [currentClinic?.id, form, preSelectedPatientId]);
 
   // Load available time slots when date or dentist changes
   useEffect(() => {

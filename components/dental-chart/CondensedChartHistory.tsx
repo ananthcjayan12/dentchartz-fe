@@ -24,6 +24,7 @@ interface HistoryDetails {
   condition_name?: string;
   severity?: string;
   description?: string;
+  note?: string;
 }
 
 interface EnhancedChartHistoryEntry extends ChartHistoryEntry {
@@ -160,6 +161,11 @@ export function CondensedChartHistory({ patientId, toothNumber, limit = 5 }: Con
                 {details.price && ` - $${Number(details.price).toFixed(2)}`}
               </p>
             )}
+            {details.description && (
+              <p className="text-sm text-gray-500 mt-1">
+                {details.description}
+              </p>
+            )}
           </>
         );
         
@@ -177,7 +183,7 @@ export function CondensedChartHistory({ patientId, toothNumber, limit = 5 }: Con
               </p>
             )}
             {details.description && (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 mt-1">
                 {details.description}
               </p>
             )}
@@ -186,9 +192,11 @@ export function CondensedChartHistory({ patientId, toothNumber, limit = 5 }: Con
         
       case "add_procedure_note":
         return (
-          <p className="text-sm text-gray-600">
-            {details.description || "Note added"}
-          </p>
+          <div className="mt-1 p-2 bg-gray-50 rounded-md border border-gray-100">
+            <p className="text-sm text-gray-600 italic">
+              "{details.note || details.description || "Note added"}"
+            </p>
+          </div>
         );
         
       default:
@@ -247,34 +255,36 @@ export function CondensedChartHistory({ patientId, toothNumber, limit = 5 }: Con
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="divide-y divide-gray-100">
-                  {entries.map((entry) => (
-                    <div key={entry.id} className="p-4 hover:bg-gray-50">
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0 mt-1">
-                          {getActionIcon(entry.action)}
-                        </div>
-                        <div className="flex-grow">
-                          <div className="flex items-center space-x-2 mb-1">
-                            {getActionBadge(entry.action)}
-                            <span className="text-xs text-gray-500">
-                              {format(parseISO(entry.date), "h:mm a")}
-                            </span>
+                  {entries
+                    .sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime()) // Sort by time ascending
+                    .map((entry) => (
+                      <div key={entry.id} className="p-4 hover:bg-gray-50">
+                        <div className="flex items-start space-x-3">
+                          <div className="flex-shrink-0 mt-1">
+                            {getActionIcon(entry.action)}
                           </div>
-                          {entry.tooth_number && (
-                            <p className="text-sm text-gray-700 mb-1">
-                              Tooth #{entry.tooth_number}
-                            </p>
-                          )}
-                          {formatDetails(entry)}
-                          {entry.performed_by && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              By: {entry.performed_by}
-                            </p>
-                          )}
+                          <div className="flex-grow">
+                            <div className="flex items-center space-x-2 mb-1">
+                              {getActionBadge(entry.action)}
+                              <span className="text-xs text-gray-500">
+                                {format(parseISO(entry.date), "h:mm a")}
+                              </span>
+                            </div>
+                            {entry.tooth_number && (
+                              <p className="text-sm text-gray-700 mb-1">
+                                Tooth #{entry.tooth_number}
+                              </p>
+                            )}
+                            {formatDetails(entry)}
+                            {entry.performed_by && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                By: {entry.performed_by}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </CollapsibleContent>
             </Collapsible>
