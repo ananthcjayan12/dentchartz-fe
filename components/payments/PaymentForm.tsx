@@ -14,26 +14,27 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Plus } from "lucide-react";
+import { v4 as uuidv4 } from "uuid";
 
 interface PaymentFormProps {
   patient: Patient;
   appointment?: Appointment;
-  isBalancePayment?: boolean;
-  balanceDue?: number;
+  isBalancePayment: boolean;
+  balanceAmount?: number;
 }
 
-export function PaymentForm({ patient, appointment, isBalancePayment = false, balanceDue = 0 }: PaymentFormProps) {
+export function PaymentForm({ patient, appointment, isBalancePayment, balanceAmount }: PaymentFormProps) {
   const router = useRouter();
   const { currentClinic } = useAuth();
   
   const [paymentMethod, setPaymentMethod] = useState("cash");
-  const [totalAmount, setTotalAmount] = useState(isBalancePayment ? balanceDue : 0);
-  const [amountPaid, setAmountPaid] = useState(isBalancePayment ? balanceDue : 0);
+  const [totalAmount, setTotalAmount] = useState(isBalancePayment ? balanceAmount : 0);
+  const [amountPaid, setAmountPaid] = useState(isBalancePayment ? balanceAmount : 0);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [paymentItems, setPaymentItems] = useState<{ id: string; description: string; amount: number }[]>(
-    isBalancePayment ? [{ id: "balance", description: "Outstanding Balance Payment", amount: balanceDue }] : []
+    isBalancePayment ? [{ id: "balance", description: "Outstanding Balance Payment", amount: balanceAmount }] : []
   );
   
   // Calculate remaining balance
@@ -119,6 +120,20 @@ export function PaymentForm({ patient, appointment, isBalancePayment = false, ba
       setIsSubmitting(false);
     }
   };
+  
+  useEffect(() => {
+    if (isBalancePayment && balanceAmount) {
+      setPaymentItems([
+        {
+          id: uuidv4(),
+          description: "Balance Payment",
+          amount: balanceAmount,
+        }
+      ]);
+    } else if (appointment) {
+      // Handle appointment case
+    }
+  }, [isBalancePayment, balanceAmount, appointment]);
   
   return (
     <form onSubmit={handleSubmit}>
