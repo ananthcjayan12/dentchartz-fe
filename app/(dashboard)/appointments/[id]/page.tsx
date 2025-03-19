@@ -294,8 +294,6 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
       }}>
         <TabsList className="mb-4">
           <TabsTrigger value="details">Appointment Details</TabsTrigger>
-          <TabsTrigger value="dental-chart">Dental Chart</TabsTrigger>
-          <TabsTrigger value="treatment-history">Treatment History</TabsTrigger>
           <TabsTrigger value="payment">Payment</TabsTrigger>
         </TabsList>
         
@@ -501,13 +499,7 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
                     Dental Chart
                   </Link>
                 </Button>
-                
-                <Button variant="outline" className="w-full" asChild>
-                  <Link href={`/patients/${getPatientId(appointment)}/treatments`}>
-                    <Activity className="mr-2 h-4 w-4" />
-                    View Treatment History
-                  </Link>
-                </Button>
+
               </CardContent>
             </Card>
           </div>
