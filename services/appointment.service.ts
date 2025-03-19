@@ -61,6 +61,17 @@ export interface DentistListResponse {
   previous: string | null;
 }
 
+export interface AppointmentStatsResponse {
+  todayCount: number;           // Number of appointments today
+  dailyChange: number;          // Change in appointments compared to yesterday
+  monthlyRevenue: number;       // Total revenue this month
+  revenueChange: number;        // Percentage change in revenue from last month
+  completionRate: number;       // Percentage of completed treatments
+  completionRateChange: number; // Change in completion rate from last month
+  upcomingCount: number;        // Number of upcoming appointments
+  cancelledCount: number;       // Number of cancelled appointments this month
+}
+
 export const appointmentService = {
   // Get all appointments with pagination and filtering
   getAppointments: async (
@@ -224,6 +235,10 @@ export const appointmentService = {
     
     const response = await apiGet(`/clinics/${clinicId}/patients/?${queryParams}`);
     return response.results;
+  },
+  
+  getAppointmentStats: async (clinicId: string): Promise<AppointmentStatsResponse> => {
+    return apiGet(`/clinics/${clinicId}/stats/appointments/`);
   }
 };
 

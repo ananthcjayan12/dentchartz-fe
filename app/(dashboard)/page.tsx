@@ -18,42 +18,80 @@ import {
   ArrowRight,
   LineChart
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({
-    totalPatients: 1248,
-    totalPatientsChange: 12,
-    appointmentsToday: 8,
-    appointmentsTodayChange: 2,
-    monthlyRevenue: 24685,
-    monthlyRevenueChange: 8,
-    treatmentCompletion: 92,
-    treatmentCompletionChange: 3
+    totalPatients: 0,
+    totalPatientsChange: 0,
+    appointmentsToday: 0,
+    appointmentsTodayChange: 0,
+    monthlyRevenue: 0,
+    monthlyRevenueChange: 0,
+    treatmentCompletion: 0,
+    treatmentCompletionChange: 0
   });
-  const [todayAppointments, setTodayAppointments] = useState([
-    {
-      id: "1",
-      time: "09:00 AM",
-      patient: { id: "1", name: "John Doe", code: "PAT-1234", initials: "JD" },
-      type: "Cleaning",
-      status: "confirmed"
-    },
-    {
-      id: "2",
-      time: "10:30 AM",
-      patient: { id: "2", name: "Jane Smith", code: "PAT-5678", initials: "JS" },
-      type: "Root Canal",
-      status: "pending"
-    },
-    {
-      id: "3",
-      time: "02:00 PM",
-      patient: { id: "3", name: "Robert Johnson", code: "PAT-9012", initials: "RJ" },
-      type: "Consultation",
-      status: "confirmed"
+  const [todayAppointments, setTodayAppointments] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { currentClinic } = useAuth();
+
+  useEffect(() => {
+    if (!currentClinic?.id) {
+      toast.error("No clinic selected");
+      return;
     }
-  ]);
-  const [isLoading, setIsLoading] = useState(false);
+    fetchDashboardData();
+  }, [currentClinic?.id]);
+
+  const fetchDashboardData = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch stats data using your API utils
+      const [patientStats, appointmentStats] = await Promise.all([
+        patientService.getPatientStats(currentClinic.id.toString()),
+        appointmentService.getAppointmentStats(currentClinic.id.toString())
+      ]);
+      
+      setStats({
+        totalPatients: patientStats.totalPatients || 0,
+        totalPatientsChange: patientStats.monthlyGrowth || 0,
+        appointmentsToday: appointmentStats.todayCount || 0,
+        appointmentsTodayChange: appointmentStats.dailyChange || 0,
+        monthlyRevenue: appointmentStats.monthlyRevenue || 0,
+        monthlyRevenueChange: appointmentStats.revenueChange || 0,
+        treatmentCompletion: appointmentStats.completionRate || 0,
+        treatmentCompletionChange: appointmentStats.completionRateChange || 0
+      });
+      
+      // Fetch today's appointments
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const appointments = await appointmentService.getAppointments(
+        currentClinic.id.toString(),
+        1,
+        "",
+        10,
+        today
+      );
+      
+      setTodayAppointments(appointments.results || []);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      toast.error("Failed to load dashboard data");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Helper function to get patient initials
+  const getPatientInitials = (name) => {
+    if (!name) return "";
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase();
+  };
 
   return (
     <div className="space-y-8">
@@ -68,10 +106,16 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Total Patients</p>
-                <p className="text-3xl font-bold mt-1">{stats.totalPatients.toLocaleString()}</p>
-                <p className="text-sm text-green-600 mt-1">
-                  ↑ {stats.totalPatientsChange}% from last month
-                </p>
+                {isLoading ? (
+                  <div className="h-8 w-24 bg-gray-200 animate-pulse rounded mt-1"></div>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold mt-1">{stats.totalPatients}</p>
+                    <p className={`text-sm ${stats.totalPatientsChange >= 0 ? 'text-green-600' : 'text-red-600'} mt-1`}>
+                      {stats.totalPatientsChange >= 0 ? '↑' : '↓'} {Math.abs(stats.totalPatientsChange)}% from last month
+                    </p>
+                  </>
+                )}
               </div>
               <div className="p-2 bg-gray-50 rounded-full">
                 <Users className="h-6 w-6 text-gray-400" />
@@ -85,10 +129,16 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Today's Appointments</p>
-                <p className="text-3xl font-bold mt-1">{stats.appointmentsToday}</p>
-                <p className="text-sm text-green-600 mt-1">
-                  ↑ {stats.appointmentsTodayChange} from yesterday
-                </p>
+                {isLoading ? (
+                  <div className="h-8 w-24 bg-gray-200 animate-pulse rounded mt-1"></div>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold mt-1">{stats.appointmentsToday}</p>
+                    <p className={`text-sm ${stats.appointmentsTodayChange >= 0 ? 'text-green-600' : 'text-red-600'} mt-1`}>
+                      {stats.appointmentsTodayChange >= 0 ? '↑' : '↓'} {Math.abs(stats.appointmentsTodayChange)} from yesterday
+                    </p>
+                  </>
+                )}
               </div>
               <div className="p-2 bg-gray-50 rounded-full">
                 <Calendar className="h-6 w-6 text-gray-400" />
@@ -102,10 +152,16 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Monthly Revenue</p>
-                <p className="text-3xl font-bold mt-1">${stats.monthlyRevenue.toLocaleString()}</p>
-                <p className="text-sm text-green-600 mt-1">
-                  ↑ {stats.monthlyRevenueChange}% from last month
-                </p>
+                {isLoading ? (
+                  <div className="h-8 w-24 bg-gray-200 animate-pulse rounded mt-1"></div>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold mt-1">${stats.monthlyRevenue.toLocaleString()}</p>
+                    <p className={`text-sm ${stats.monthlyRevenueChange >= 0 ? 'text-green-600' : 'text-red-600'} mt-1`}>
+                      {stats.monthlyRevenueChange >= 0 ? '↑' : '↓'} {Math.abs(stats.monthlyRevenueChange)}% from last month
+                    </p>
+                  </>
+                )}
               </div>
               <div className="p-2 bg-gray-50 rounded-full">
                 <CreditCard className="h-6 w-6 text-gray-400" />
@@ -119,10 +175,16 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Treatment Completion</p>
-                <p className="text-3xl font-bold mt-1">{stats.treatmentCompletion}%</p>
-                <p className="text-sm text-green-600 mt-1">
-                  ↑ {stats.treatmentCompletionChange}% from last month
-                </p>
+                {isLoading ? (
+                  <div className="h-8 w-24 bg-gray-200 animate-pulse rounded mt-1"></div>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold mt-1">{stats.treatmentCompletion}%</p>
+                    <p className={`text-sm ${stats.treatmentCompletionChange >= 0 ? 'text-green-600' : 'text-red-600'} mt-1`}>
+                      {stats.treatmentCompletionChange >= 0 ? '↑' : '↓'} {Math.abs(stats.treatmentCompletionChange)}% from last month
+                    </p>
+                  </>
+                )}
               </div>
               <div className="p-2 bg-gray-50 rounded-full">
                 <Activity className="h-6 w-6 text-gray-400" />
@@ -145,58 +207,89 @@ export default function DashboardPage() {
         
         <Card className="shadow-sm">
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b text-xs text-gray-500 uppercase">
-                    <th className="px-6 py-3 text-left">Time</th>
-                    <th className="px-6 py-3 text-left">Patient</th>
-                    <th className="px-6 py-3 text-left">Type</th>
-                    <th className="px-6 py-3 text-left">Status</th>
-                    <th className="px-6 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {todayAppointments.map(appointment => (
-                    <tr key={appointment.id} className="border-b hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {appointment.time}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
-                            {appointment.patient.initials}
-                          </div>
-                          <div>
-                            <p className="font-medium">{appointment.patient.name}</p>
-                            <p className="text-xs text-gray-500">#{appointment.patient.code}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {appointment.type}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          appointment.status === 'confirmed' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {appointment.status === 'confirmed' ? 'Confirmed' : 'Pending'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/appointments/${appointment.id}`} className="text-indigo-600">
-                            View
-                          </Link>
-                        </Button>
-                      </td>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+              </div>
+            ) : todayAppointments.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b text-xs text-gray-500 uppercase">
+                      <th className="px-6 py-3 text-left">Time</th>
+                      <th className="px-6 py-3 text-left">Patient</th>
+                      <th className="px-6 py-3 text-left">Type</th>
+                      <th className="px-6 py-3 text-left">Status</th>
+                      <th className="px-6 py-3 text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {todayAppointments.map(appointment => {
+                      const patientName = appointment.patient_name || 'Unknown Patient';
+                      
+                      const patientCode = `PAT-${appointment.patient}`;
+                      
+                      const patientInitials = getPatientInitials(appointment.patient_name) || 'UP';
+                      
+                      const appointmentTime = appointment.start_time 
+                        ? format(new Date(`2000-01-01T${appointment.start_time}`), 'hh:mm a')
+                        : 'N/A';
+                      
+                      return (
+                        <tr key={appointment.id} className="border-b hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {appointmentTime}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
+                                {patientInitials}
+                              </div>
+                              <div>
+                                <p className="font-medium">{patientName}</p>
+                                <p className="text-xs text-gray-500">{patientCode}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {appointment.type || 'General'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              appointment.status === 'scheduled'
+                                ? 'bg-green-100 text-green-800' 
+                                : appointment.status === 'pending'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : appointment.status === 'cancelled'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {appointment.status_display || 
+                               (appointment.status && appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)) || 
+                               'Unknown'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right">
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link href={`/appointments/${appointment.id}`} className="text-indigo-600">
+                                View
+                              </Link>
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-500">No appointments scheduled for today</p>
+                <Button variant="link" asChild className="mt-2">
+                  <Link href="/appointments/new">Schedule an appointment</Link>
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

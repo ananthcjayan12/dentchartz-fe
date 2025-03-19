@@ -247,6 +247,13 @@ export interface PatientListResponse {
   previous: string | null;
 }
 
+export interface PatientStatsResponse {
+  totalPatients: number;        // Total number of patients in the clinic
+  monthlyGrowth: number;        // Percentage growth from last month
+  newPatientsThisMonth: number; // Number of new patients this month
+  activePatients: number;       // Patients with appointments in last 3 months
+}
+
 export const patientService = {
   // Get all patients with pagination and search
   getPatients: async (
@@ -296,7 +303,11 @@ export const patientService = {
     
     const response = await apiGet(`/clinics/${clinicId}/patients/?${queryParams.toString()}`);
     return response.results;
-  }
+  },
+
+  getPatientStats: async (clinicId: string): Promise<PatientStatsResponse> => {
+    return apiGet(`/clinics/${clinicId}/stats/patients/`);
+  },
 };
 
 export default patientService; 
