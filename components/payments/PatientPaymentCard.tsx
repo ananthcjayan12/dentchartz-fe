@@ -17,7 +17,12 @@ interface PatientPaymentCardProps {
 export function PatientPaymentCard({ patient }: PatientPaymentCardProps) {
   const { currentClinic } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [summary, setSummary] = useState<PaymentSummary | null>(null);
+  const [summary, setSummary] = useState<PaymentSummary>({
+    total_billed: 0,
+    total_paid: 0,
+    balance_due: 0,
+    last_payment_date: undefined
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -26,16 +31,30 @@ export function PatientPaymentCard({ patient }: PatientPaymentCardProps) {
       
       setIsLoading(true);
       try {
-        const [paymentsResponse, summaryResponse] = await Promise.all([
-          paymentService.getPatientPayments(currentClinic.id.toString(), patient.id, 1, 5),
-          paymentService.getPatientPaymentSummary(currentClinic.id.toString(), patient.id)
+        const [paymentsResponse, summaryData] = await Promise.all([
+          paymentService.getPatientPayments(currentClinic.id, patient.id, 1, 5),
+          paymentService.getPatientPaymentSummary(currentClinic.id, patient.id)
         ]);
         
-        setPayments(paymentsResponse.results);
-        setSummary(summaryResponse);
+        setPayments(paymentsResponse.results || []);
+        
+        // Ensure summary data is properly formatted with numeric values
+        const formattedSummary: PaymentSummary = {
+          total_billed: typeof summaryData.total_billed === 'string' 
+            ? parseFloat(summaryData.total_billed) 
+            : (summaryData.total_billed || 0),
+          total_paid: typeof summaryData.total_paid === 'string' 
+            ? parseFloat(summaryData.total_paid) 
+            : (summaryData.total_paid || 0),
+          balance_due: typeof summaryData.balance_due === 'string' 
+            ? parseFloat(summaryData.balance_due) 
+            : (summaryData.balance_due || 0),
+          last_payment_date: summaryData.last_payment_date
+        };
+        
+        setSummary(formattedSummary);
       } catch (error) {
         console.error("Error fetching payment data:", error);
-        // Don't show error toast here as this is a secondary component
       } finally {
         setIsLoading(false);
       }
@@ -44,13 +63,31 @@ export function PatientPaymentCard({ patient }: PatientPaymentCardProps) {
     fetchData();
   }, [patient?.id, currentClinic?.id]);
 
+  const getPaymentUrl = (path: string) => {
+    if (!currentClinic?.id) return '#';
+    const baseUrl = `/patients/${patient.id}/payments`;
+    const clinicParam = `clinic_id=${currentClinic.id}`;
+    
+    if (path === '') {
+      return `${baseUrl}?${clinicParam}`;
+    }
+    
+    return `${baseUrl}/${path}?${clinicParam}`;
+  };
+
+  // Format currency values safely
+  const formatCurrency = (value: number | undefined): string => {
+    if (value === undefined || value === null) return '0.00';
+    return value.toFixed(2);
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-xl">Payment Information</CardTitle>
         <div className="flex space-x-2">
           <Button asChild>
-            <Link href={`/patients/${patient.id}/payments/new`}>
+            <Link href={getPaymentUrl('new')}>
               <Plus className="mr-2 h-4 w-4" />
               Add Payment
             </Link>
@@ -61,22 +98,22 @@ export function PatientPaymentCard({ patient }: PatientPaymentCardProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-blue-50 p-4 rounded-lg">
             <p className="text-sm text-blue-600 font-medium">Total Treatment Cost</p>
-            <p className="text-2xl font-bold">${summary?.total_billed?.toFixed(2) || '0.00'}</p>
+            <p className="text-2xl font-bold">${formatCurrency(summary.total_billed)}</p>
           </div>
           <div className="bg-green-50 p-4 rounded-lg">
             <p className="text-sm text-green-600 font-medium">Total Paid</p>
-            <p className="text-2xl font-bold">${summary?.total_paid?.toFixed(2) || '0.00'}</p>
+            <p className="text-2xl font-bold">${formatCurrency(summary.total_paid)}</p>
           </div>
-          <div className={`p-4 rounded-lg ${(summary?.balance_due || 0) > 0 ? 'bg-red-50' : 'bg-gray-50'}`}>
-            <p className={`text-sm font-medium ${(summary?.balance_due || 0) > 0 ? 'text-red-600' : 'text-gray-600'}`}>
+          <div className={`p-4 rounded-lg ${summary.balance_due > 0 ? 'bg-red-50' : 'bg-gray-50'}`}>
+            <p className={`text-sm font-medium ${summary.balance_due > 0 ? 'text-red-600' : 'text-gray-600'}`}>
               Balance Due
             </p>
-            <p className={`text-2xl font-bold ${(summary?.balance_due || 0) > 0 ? 'text-red-600' : 'text-gray-600'}`}>
-              ${summary?.balance_due?.toFixed(2) || '0.00'}
+            <p className={`text-2xl font-bold ${summary.balance_due > 0 ? 'text-red-600' : 'text-gray-600'}`}>
+              ${formatCurrency(summary.balance_due)}
             </p>
-            {(summary?.balance_due || 0) > 0 && (
+            {summary.balance_due > 0 && (
               <Button variant="destructive" className="w-full mt-2" asChild>
-                <Link href={`/patients/${patient.id}/payments/balance`}>
+                <Link href={getPaymentUrl('balance')}>
                   Pay Balance
                 </Link>
               </Button>
@@ -98,14 +135,14 @@ export function PatientPaymentCard({ patient }: PatientPaymentCardProps) {
                     {format(new Date(payment.payment_date), "MMM d, yyyy")}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {payment.payment_method.charAt(0).toUpperCase() + payment.payment_method.slice(1).replace('_', ' ')}
+                    {payment.payment_method_display}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-medium">${payment.amount.toFixed(2)}</p>
+                  <p className="font-medium">${typeof payment.amount_paid === 'number' ? payment.amount_paid.toFixed(2) : payment.amount_paid}</p>
                 </div>
                 <Link 
-                  href={`/patients/${patient.id}/payments/${payment.id}`}
+                  href={getPaymentUrl(payment.id)}
                   className="text-blue-600 hover:text-blue-800"
                 >
                   <ArrowRight className="h-4 w-4" />
@@ -114,7 +151,7 @@ export function PatientPaymentCard({ patient }: PatientPaymentCardProps) {
             ))}
             <div className="text-center mt-4">
               <Button variant="outline" asChild>
-                <Link href={`/patients/${patient.id}/payments`}>
+                <Link href={getPaymentUrl('')}>
                   View All Payments
                 </Link>
               </Button>
@@ -125,7 +162,7 @@ export function PatientPaymentCard({ patient }: PatientPaymentCardProps) {
             <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-2" />
             <p className="text-gray-500">No payment records found</p>
             <Button variant="outline" className="mt-4" asChild>
-              <Link href={`/patients/${patient.id}/payments/new`}>
+              <Link href={getPaymentUrl('new')}>
                 <Plus className="mr-2 h-4 w-4" />
                 Record First Payment
               </Link>

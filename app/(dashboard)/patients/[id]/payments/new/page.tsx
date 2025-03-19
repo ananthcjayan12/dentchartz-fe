@@ -1,34 +1,44 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 import { patientService, Patient } from "@/services/patient.service";
 import { appointmentService, Appointment } from "@/services/appointment.service";
-import { toast } from "sonner";
 import { PaymentForm } from "@/components/payments/PaymentForm";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 
-export default function NewPaymentPage({ params }: { params: { id: string } }) {
-  const router = useRouter();
+export default function NewPaymentPage() {
+  const params = useParams();
   const searchParams = useSearchParams();
-  const appointmentId = searchParams.get("appointment");
-  const fromChart = searchParams.get("from_chart") === "true";
+  const router = useRouter();
+  const { currentClinic } = useAuth();
+  
+  const patientId = params.id as string;
+  const appointmentId = searchParams.get('appointment_id');
+  const fromChart = searchParams.get('from_chart') === 'true';
   
   const [patient, setPatient] = useState<Patient | null>(null);
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   useEffect(() => {
     const fetchData = async () => {
+      if (!currentClinic?.id || !patientId) {
+        toast.error("No clinic selected");
+        return;
+      }
+
       setIsLoading(true);
       try {
-        const patientData = await patientService.getPatient(params.id);
+        const patientData = await patientService.getPatient(currentClinic.id, patientId);
         setPatient(patientData);
         
         if (appointmentId) {
-          const appointmentData = await appointmentService.getAppointment(appointmentId);
+          const appointmentData = await appointmentService.getAppointment(currentClinic.id, appointmentId);
           setAppointment(appointmentData);
         }
       } catch (error) {
@@ -40,64 +50,53 @@ export default function NewPaymentPage({ params }: { params: { id: string } }) {
     };
     
     fetchData();
-  }, [params.id, appointmentId]);
-  
+  }, [patientId, appointmentId, currentClinic?.id]);
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
-  
+
   if (!patient) {
     return (
-      <div className="text-center py-12">
-        <p className="text-red-500">Patient not found</p>
-        <Button 
-          variant="outline" 
-          className="mt-4"
-          onClick={() => router.push("/patients")}
-        >
-          Back to Patients
+      <div className="text-center py-10">
+        <p className="text-gray-500">Patient not found</p>
+        <Button variant="link" asChild>
+          <Link href="/patients">Back to patients</Link>
         </Button>
       </div>
     );
   }
-  
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-semibold text-gray-900">Add Payment</h1>
-          <p className="mt-1 text-gray-500">Record a new payment for {patient.first_name} {patient.last_name}</p>
+          <p className="mt-1 text-gray-500">Record a new payment for {patient.name}</p>
         </div>
         <Button asChild variant="outline">
           {fromChart ? (
-            <Link href={`/patients/${patient.id}/dental-chart`}>
+            <Link href={`/patients/${patientId}/dental-chart?clinic_id=${currentClinic?.id}`}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Dental Chart
             </Link>
-          ) : appointment ? (
-            <Link href={`/appointments/${appointment.id}`}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Appointment
-            </Link>
           ) : (
-            <Link href={`/patients/${patient.id}`}>
+            <Link href={`/patients/${patientId}/payments?clinic_id=${currentClinic?.id}`}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Patient
+              Back to Payments
             </Link>
           )}
         </Button>
       </div>
-      
+
       <PaymentForm 
         patient={patient} 
-        appointment={appointment || undefined} 
+        appointment={appointment} 
+        isBalancePayment={false} 
       />
     </div>
   );

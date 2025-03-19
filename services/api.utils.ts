@@ -76,8 +76,19 @@ export const fetchWithClinic = async (
 };
 
 // Convenience methods for different HTTP methods
-export const apiGet = (url: string, customHeaders = {}) => 
-  fetchWithClinic(url, "GET", undefined, customHeaders);
+export const apiGet = async <T>(endpoint: string, params?: Record<string, string>): Promise<T> => {
+  const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
+  const response = await fetch(`${API_BASE_URL}${endpoint}${queryString}`, {
+    headers: await getDefaultHeaders(),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || `API request failed with status ${response.status}`);
+  }
+
+  return response.json();
+};
 
 export const apiPost = (url: string, data: any, customHeaders = {}) => 
   fetchWithClinic(url, "POST", data, customHeaders);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { patientService, Patient } from "@/services/patient.service";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,39 +12,36 @@ import { ToothIcon } from "@/components/icons/ToothIcon";
 import { toast } from "sonner";
 import { PatientPaymentCard } from "@/components/payments/PatientPaymentCard";
 
-export default function PatientDetailsPage({ params }: { params: { id: string } }) {
+export default function PatientDetailsPage() {
+  const params = useParams();
   const router = useRouter();
   const { currentClinic } = useAuth();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const patientId = params.id;
+  const patientId = params.id as string;
 
   useEffect(() => {
-    fetchPatient();
-  }, [patientId]);
-
-  const fetchPatient = async () => {
-    if (!currentClinic?.id) {
-      toast.error("No clinic selected. Please select a clinic first.");
-      router.push("/");
-      return;
-    }
+    const fetchData = async () => {
+      if (!currentClinic?.id || !patientId) return;
+      
+      setIsLoading(true);
+      try {
+        const data = await patientService.getPatient(
+          currentClinic.id.toString(),
+          patientId
+        );
+        setPatient(data);
+      } catch (error) {
+        console.error("Error fetching patient:", error);
+        toast.error("Failed to load patient details");
+        router.push("/patients");
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    setIsLoading(true);
-    try {
-      const data = await patientService.getPatient(
-        currentClinic.id.toString(),
-        patientId
-      );
-      setPatient(data);
-    } catch (error) {
-      console.error("Error fetching patient:", error);
-      toast.error("Failed to load patient details");
-      router.push("/patients");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    fetchData();
+  }, [patientId, currentClinic?.id, router]);
 
   const handleDelete = async () => {
     if (!patient || !currentClinic?.id) return;

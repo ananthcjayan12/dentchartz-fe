@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import { Patient } from "@/services/patient.service";
 import { Appointment } from "@/services/appointment.service";
-import paymentService from "@/services/payment.service";
+import paymentService, { CreatePaymentData } from "@/services/payment.service";
 import { toast } from "sonner";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ interface PaymentFormProps {
 
 export function PaymentForm({ patient, appointment, isBalancePayment = false, balanceDue = 0 }: PaymentFormProps) {
   const router = useRouter();
+  const { currentClinic } = useAuth();
   
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [totalAmount, setTotalAmount] = useState(isBalancePayment ? balanceDue : 0);
@@ -71,41 +73,45 @@ export function PaymentForm({ patient, appointment, isBalancePayment = false, ba
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (paymentItems.length === 0) {
+    if (!currentClinic?.id) {
+      toast.error("No clinic selected");
+      return;
+    }
+    
+    if (!isBalancePayment && paymentItems.length === 0) {
       toast.error("Please add at least one payment item");
       return;
     }
     
-    if (totalAmount <= 0) {
-      toast.error("Total amount must be greater than zero");
-      return;
-    }
-    
-    if (amountPaid < 0) {
-      toast.error("Amount paid cannot be negative");
+    if (amountPaid <= 0) {
+      toast.error("Amount paid must be greater than zero");
       return;
     }
     
     try {
       setIsSubmitting(true);
       
-      await paymentService.createPayment(patient.id, {
+      const paymentData: CreatePaymentData = {
+        patient_id: patient.id,
         appointment_id: appointment?.id,
-        payment_method: paymentMethod,
-        total_amount: totalAmount,
+        payment_date: new Date().toISOString().split('T')[0],
+        total_amount: isBalancePayment ? 0 : totalAmount,
         amount_paid: amountPaid,
+        payment_method: paymentMethod,
         notes: notes,
-        is_balance_payment: isBalancePayment,
-        items: paymentItems.map(item => ({
-          description: item.description,
-          amount: parseFloat(item.amount.toString())
-        }))
-      });
+        payment_items: isBalancePayment 
+          ? [{ description: "Balance Payment", amount: amountPaid }]
+          : paymentItems.map(item => ({
+              description: item.description,
+              amount: item.amount,
+              treatment_id: item.treatment_id
+            }))
+      };
+      
+      await paymentService.createPayment(currentClinic.id, paymentData);
       
       toast.success("Payment recorded successfully");
-      
-      // Redirect back to patient detail page
-      router.push(`/patients/${patient.id}`);
+      router.push(`/patients/${patient.id}/payments?clinic_id=${currentClinic.id}`);
     } catch (error) {
       console.error("Error creating payment:", error);
       toast.error("Failed to record payment");
