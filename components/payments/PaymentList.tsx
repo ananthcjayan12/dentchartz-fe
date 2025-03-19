@@ -17,6 +17,24 @@ export function PaymentList({ payments, showPatientName = false, clinicId }: Pay
     return value.toFixed(2);
   };
 
+  const getPatientName = (payment: Payment): string => {
+    if (typeof payment.patient === 'number' && payment.patient_name) {
+      return payment.patient_name;
+    } else if (payment.patient && typeof payment.patient === 'object' && payment.patient.name) {
+      return payment.patient.name;
+    }
+    return 'Unknown Patient';
+  };
+
+  const getPatientId = (payment: Payment): string => {
+    if (typeof payment.patient === 'number') {
+      return payment.patient.toString();
+    } else if (payment.patient && typeof payment.patient === 'object' && payment.patient.id) {
+      return payment.patient.id;
+    }
+    return '';
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
@@ -55,8 +73,8 @@ export function PaymentList({ payments, showPatientName = false, clinicId }: Pay
               </td>
               {showPatientName && (
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <Link href={`/patients/${payment.patient.id}?clinic_id=${clinicId}`} className="text-indigo-600 hover:text-indigo-900">
-                    {payment.patient.name}
+                  <Link href={`/patients/${getPatientId(payment)}?clinic_id=${clinicId}`} className="text-indigo-600 hover:text-indigo-900">
+                    {getPatientName(payment)}
                   </Link>
                 </td>
               )}
@@ -88,7 +106,7 @@ export function PaymentList({ payments, showPatientName = false, clinicId }: Pay
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 <Link 
-                  href={`/patients/${payment.patient.id}/payments/${payment.id}?clinic_id=${clinicId}`}
+                  href={`/patients/${getPatientId(payment)}/payments/${payment.id}?clinic_id=${clinicId}`}
                   className="text-indigo-600 hover:text-indigo-900"
                 >
                   View

@@ -1,31 +1,33 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from "./api.utils";
 
 export interface Payment {
-  id: string;
+  id: string | number;
   patient: {
     id: string;
     name: string;
-  };
+  } | number;
+  patient_name?: string;
   appointment?: {
     id: string;
     date: string;
   };
   payment_date: string;
-  total_amount: number;
-  amount_paid: number;
-  balance: number;
+  total_amount: number | string;
+  amount_paid: number | string;
+  balance: number | string;
   payment_method: string;
   payment_method_display: string;
-  is_balance_payment: boolean;
+  is_balance_payment?: boolean;
   notes?: string;
   created_by: {
     id: string;
     username: string;
     full_name: string;
-  };
-  created_at: string;
-  updated_at: string;
-  items: PaymentItem[];
+  } | number;
+  created_by_name?: string;
+  created_at?: string;
+  updated_at?: string;
+  items?: PaymentItem[];
 }
 
 export interface PaymentItem {
@@ -133,6 +135,25 @@ export const paymentService = {
     paymentId: string
   ): Promise<void> => {
     return apiDelete(`/clinics/${clinicId}/payments/${paymentId}/`);
+  },
+  
+  // Get all payments for a clinic with optional date filtering
+  getClinicPayments: async (
+    clinicId: string,
+    page: number = 1,
+    limit: number = 10,
+    startDate?: string,
+    endDate?: string
+  ): Promise<PaymentListResponse> => {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (startDate) queryParams.append('start_date', startDate);
+    if (endDate) queryParams.append('end_date', endDate);
+    
+    return apiGet(`/clinics/${clinicId}/payments/?${queryParams}`);
   }
 };
 
