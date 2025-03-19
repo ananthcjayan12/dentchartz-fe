@@ -35,7 +35,7 @@ interface GroupedHistory {
   [key: string]: EnhancedChartHistoryEntry[];
 }
 
-export function CondensedChartHistory({ patientId, toothNumber, limit = 5 }: CondensedChartHistoryProps) {
+export function CondensedChartHistory({ patientId, toothNumber, limit }: CondensedChartHistoryProps) {
   const { currentClinic } = useAuth();
   const [history, setHistory] = useState<ChartHistoryEntry[]>([]);
   const [groupedHistory, setGroupedHistory] = useState<GroupedHistory>({});
@@ -59,12 +59,11 @@ export function CondensedChartHistory({ patientId, toothNumber, limit = 5 }: Con
           filters
         );
         
-        const limitedHistory = historyData.results.slice(0, limit);
-        setHistory(limitedHistory);
+        setHistory(historyData.results);
         
         // Group history by date
         const grouped: GroupedHistory = {};
-        limitedHistory.forEach(entry => {
+        historyData.results.forEach(entry => {
           const dateKey = format(parseISO(entry.date), 'yyyy-MM-dd');
           if (!grouped[dateKey]) {
             grouped[dateKey] = [];
@@ -90,7 +89,7 @@ export function CondensedChartHistory({ patientId, toothNumber, limit = 5 }: Con
     };
     
     fetchHistory();
-  }, [currentClinic?.id, patientId, toothNumber, limit]);
+  }, [currentClinic?.id, patientId, toothNumber]);
   
   const getActionIcon = (action: string) => {
     switch (action) {
