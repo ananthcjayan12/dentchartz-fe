@@ -293,321 +293,287 @@ export function AppointmentForm({ appointment, onSuccess, preSelectedPatientId }
   }
 
   return (
-    <Card className="max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold">
-          {appointment ? "Edit Appointment" : "Schedule New Appointment"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Patient Selection */}
-              <div className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="patient_id"
-                  render={({ field }) => (
-                    <FormItem className="space-y-4">
-                      <FormLabel className="text-base font-medium">Patient Information</FormLabel>
-                      <div className="flex items-center space-x-2">
-                        <div className="relative flex-1">
-                          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                            <Search className="h-4 w-4 text-gray-400" />
-                          </div>
-                          <Input
-                            placeholder="Search patients..."
-                            value={patientSearch}
-                            onChange={(e) => setPatientSearch(e.target.value)}
-                            className="pl-10"
-                          />
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column - Patient Selection */}
+          <div className="space-y-6">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-medium text-gray-900 mb-2">Patient Information</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Select an existing patient or add a new one
+              </p>
+              
+              <FormField
+                control={form.control}
+                name="patient_id"
+                render={({ field }) => (
+                  <FormItem className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="relative flex-1">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                          <Search className="h-4 w-4 text-gray-400" />
                         </div>
-                        <Dialog open={newPatientDialogOpen} onOpenChange={setNewPatientDialogOpen}>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="icon">
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-[600px]">
-                            <DialogHeader>
-                              <DialogTitle>Add New Patient</DialogTitle>
-                            </DialogHeader>
-                            <PatientForm onSuccess={handleNewPatientSuccess} />
-                          </DialogContent>
-                        </Dialog>
+                        <Input
+                          placeholder="Search patients..."
+                          value={patientSearch}
+                          onChange={(e) => setPatientSearch(e.target.value)}
+                          className="pl-10"
+                        />
                       </div>
-                      
-                      <div className="border rounded-md overflow-hidden">
-                        <ScrollArea className="h-[200px]">
-                          <div className="p-1">
-                            {isLoading ? (
-                              <div className="flex justify-center items-center h-full py-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                              </div>
-                            ) : filteredPatients.length > 0 ? (
-                              filteredPatients.map((patient) => (
-                                <div
-                                  key={patient.id}
-                                  className={cn(
-                                    "flex items-center p-3 rounded-md cursor-pointer transition-colors",
-                                    patientId === patient.id.toString()
-                                      ? "bg-primary text-primary-foreground"
-                                      : "hover:bg-muted"
-                                  )}
-                                  onClick={() => {
-                                    setPatientId(patient.id.toString());
-                                    field.onChange(patient.id.toString());
-                                  }}
-                                >
-                                  <div className="flex-shrink-0 mr-3">
-                                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                                      <User className="h-5 w-5" />
-                                    </div>
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-medium truncate">{patient.name}</p>
-                                    <div className="flex items-center text-sm">
-                                      {patient.phone && (
-                                        <span className="truncate">{patient.phone}</span>
-                                      )}
-                                      {patient.gender && (
-                                        <Badge variant="outline" className="ml-2">
-                                          {patient.gender === 'M' ? 'Male' : patient.gender === 'F' ? 'Female' : 'Other'}
-                                        </Badge>
-                                      )}
-                                    </div>
+                      <Dialog open={newPatientDialogOpen} onOpenChange={setNewPatientDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="icon" type="button">
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>Add New Patient</DialogTitle>
+                          </DialogHeader>
+                          <div className="mt-4">
+                            <PatientForm 
+                              onSuccess={handleNewPatientSuccess}
+                              onCancel={() => setNewPatientDialogOpen(false)}
+                              mode="dialog"
+                            />
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                    
+                    <div className="border rounded-lg overflow-hidden bg-white">
+                      <ScrollArea className="h-[300px]">
+                        <div className="p-1">
+                          {isLoading ? (
+                            <div className="flex justify-center items-center h-full py-8">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            </div>
+                          ) : filteredPatients.length > 0 ? (
+                            filteredPatients.map((patient) => (
+                              <div
+                                key={patient.id}
+                                className={cn(
+                                  "flex items-center p-3 rounded-md cursor-pointer transition-colors",
+                                  patientId === patient.id.toString()
+                                    ? "bg-primary text-primary-foreground"
+                                    : "hover:bg-muted"
+                                )}
+                                onClick={() => {
+                                  setPatientId(patient.id.toString());
+                                  field.onChange(patient.id.toString());
+                                }}
+                              >
+                                <div className="flex-shrink-0 mr-3">
+                                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                                    <User className="h-5 w-5" />
                                   </div>
                                 </div>
-                              ))
-                            ) : patientSearch ? (
-                              <div className="text-center py-8 text-gray-500">
-                                <Users className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                                <p>No patients found matching "{patientSearch}"</p>
-                                <Button 
-                                  variant="link" 
-                                  onClick={() => setNewPatientDialogOpen(true)}
-                                  className="mt-2"
-                                >
-                                  Add new patient
-                                </Button>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium truncate">{patient.name}</p>
+                                  <div className="flex items-center text-sm">
+                                    {patient.phone && (
+                                      <span className="truncate">{patient.phone}</span>
+                                    )}
+                                    {patient.gender && (
+                                      <Badge variant="outline" className="ml-2">
+                                        {patient.gender === 'M' ? 'Male' : patient.gender === 'F' ? 'Female' : 'Other'}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                            ) : (
-                              <div className="text-center py-8 text-gray-500">
-                                <Users className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                                <p>No patients available</p>
-                                <Button 
-                                  variant="link" 
-                                  onClick={() => setNewPatientDialogOpen(true)}
-                                  className="mt-2"
-                                >
-                                  Add new patient
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        </ScrollArea>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                            ))
+                          ) : patientSearch ? (
+                            <div className="text-center py-8 text-gray-500">
+                              <Users className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                              <p>No patients found matching "{patientSearch}"</p>
+                              <Button 
+                                variant="link" 
+                                onClick={() => setNewPatientDialogOpen(true)}
+                                className="mt-2"
+                              >
+                                Add new patient
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 text-gray-500">
+                              <Users className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                              <p>No patients available</p>
+                              <Button 
+                                variant="link" 
+                                onClick={() => setNewPatientDialogOpen(true)}
+                                className="mt-2"
+                              >
+                                Add new patient
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
 
-              <div className="space-y-6">
-                {/* Dentist Selection */}
-                <FormField
-                  control={form.control}
-                  name="dentist_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-base font-medium">Dentist</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          setDentistId(value);
-                        }}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a dentist" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {dentists.map((dentist) => (
-                            <SelectItem key={dentist.id} value={dentist.id.toString()}>
-                              Dr. {dentist.first_name} {dentist.last_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+          {/* Right Column - Appointment Details */}
+          <div className="space-y-6">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-medium text-gray-900 mb-2">Appointment Details</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Select the dentist, date, and time for the appointment
+              </p>
+              
+              {/* Dentist Selection */}
+              <FormField
+                control={form.control}
+                name="dentist_id"
+                render={({ field }) => (
+                  <FormItem className="mb-4">
+                    <FormLabel>Dentist</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setDentistId(value);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a dentist" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {dentists.map((dentist) => (
+                          <SelectItem key={dentist.id} value={dentist.id}>
+                            {dentist.first_name} {dentist.last_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                {/* Date Selection */}
-                <FormField
-                  control={form.control}
-                  name="date"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel className="text-base font-medium">Date</FormLabel>
+              {/* Date Selection */}
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem className="mb-4">
+                    <FormLabel>Date</FormLabel>
+                    <div className="flex space-x-2">
                       <Popover>
                         <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? format(field.value, "PPP") : "Pick a date"}
+                          </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
                             mode="single"
                             selected={field.value}
                             onSelect={handleDateChange}
-                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                            disabled={(date) =>
+                              date < new Date() || date > new Date(new Date().setMonth(new Date().getMonth() + 3))
+                            }
                             initialFocus
                           />
                         </PopoverContent>
                       </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Time Selection */}
-            <FormField
-              control={form.control}
-              name="start_time"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-base font-medium">Available Time Slots</FormLabel>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 mt-2">
-                    {availableTimeSlots.length > 0 ? (
-                      availableTimeSlots.map((slot) => (
-                        <Button
-                          key={slot.time}
-                          type="button"
-                          variant={slot.selected || selectedTime === slot.time ? "default" : "outline"}
-                          className={cn(
-                            "h-10",
-                            !slot.available && "bg-gray-100 text-gray-400 cursor-not-allowed hover:bg-gray-100"
-                          )}
-                          onClick={() => slot.available && handleTimeSelect(slot.time)}
-                          disabled={!slot.available}
-                        >
-                          {slot.time}
-                          {!slot.available && slot.patientName && (
-                            <span className="sr-only"> - Booked by {slot.patientName}</span>
-                          )}
-                        </Button>
-                      ))
-                    ) : dentistId && selectedDate ? (
-                      <div className="col-span-full text-center py-6 text-gray-500">
-                        <Clock className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                        <p>No time slots available for this date</p>
-                        <p className="text-sm">Please select a different date or dentist</p>
-                      </div>
-                    ) : (
-                      <div className="col-span-full text-center py-6 text-gray-500">
-                        <p>Please select a dentist and date to view available time slots</p>
-                      </div>
-                    )}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Reason */}
-              <FormField
-                control={form.control}
-                name="reason"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Reason for Visit</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Regular checkup, Toothache, etc." {...field} />
-                    </FormControl>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Status (only for editing) */}
-              {appointment && (
+              {/* Time Slots */}
+              <FormItem>
+                <FormLabel>Time Slot</FormLabel>
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {availableTimeSlots.map((slot) => (
+                    <Button
+                      key={slot.time}
+                      type="button"
+                      variant={selectedTime === slot.time ? "default" : "outline"}
+                      className={cn(
+                        "h-10",
+                        !slot.available && "bg-gray-100 text-gray-400 cursor-not-allowed hover:bg-gray-100"
+                      )}
+                      onClick={() => slot.available && handleTimeSelect(slot.time)}
+                      disabled={!slot.available}
+                    >
+                      {slot.time}
+                    </Button>
+                  ))}
+                </div>
+              </FormItem>
+            </div>
+          </div>
+        </div>
+
+        {/* Notes Section */}
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <h3 className="font-medium text-gray-900 mb-2">Additional Information</h3>
+          <div className="grid grid-cols-1 gap-4">
+            <FormField
+              control={form.control}
+              name="reason"
+              render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select
-                    value={status}
-                    onValueChange={setStatus}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="scheduled">Scheduled</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                      <SelectItem value="no_show">No Show</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Reason for Visit</FormLabel>
+                  <Textarea {...field} placeholder="Enter the reason for the appointment" />
+                  <FormMessage />
                 </FormItem>
               )}
-            </div>
-
-            {/* Notes */}
+            />
+            
             <FormField
               control={form.control}
               name="notes"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Notes</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Additional notes about the appointment"
-                      className="resize-none min-h-[100px]"
-                      {...field}
-                    />
-                  </FormControl>
+                  <Textarea {...field} placeholder="Add any additional notes" />
                   <FormMessage />
                 </FormItem>
               )}
             />
+          </div>
+        </div>
 
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.push("/appointments")}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : appointment ? "Update Appointment" : "Create Appointment"}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+        {/* Submit Button */}
+        <div className="flex justify-end space-x-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                Scheduling...
+              </>
+            ) : (
+              'Schedule Appointment'
+            )}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 } 
