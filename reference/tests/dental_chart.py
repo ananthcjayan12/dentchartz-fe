@@ -1,153 +1,138 @@
-from django.db import models
-from django.contrib.auth.models import User
-from api.models import Patient, Clinic
-from django.utils import timezone
+from rest_framework import serializers
+from api.models.dental_chart import (
+    DentalCondition, DentalProcedure, DentalChartTooth, 
+    DentalChartCondition, DentalChartProcedure, ChartHistory, ProcedureNote, GeneralProcedure
+)
+from api.models import Patient
 
-class DentalCondition(models.Model):
-    """Model for dental conditions like cavity, fracture, etc."""
-    clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='dental_conditions')
-    name = models.CharField(max_length=100)
-    code = models.CharField(max_length=10)
-    description = models.TextField(blank=True)
-    color_code = models.CharField(max_length=7, blank=True)  # Hex color code
-    icon = models.CharField(max_length=50, blank=True)
-    is_standard = models.BooleanField(default=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    
-    def __str__(self):
-        return f"{self.name} ({self.code})"
+class DentalConditionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DentalCondition
+        fields = ['id', 'name', 'code', 'description', 'color_code', 'icon', 'is_standard', 'created_at']
 
-class DentalProcedure(models.Model):
-    """Model for dental procedures like filling, extraction, etc."""
-    clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='dental_procedures')
-    name = models.CharField(max_length=100)
-    code = models.CharField(max_length=10)
-    description = models.TextField(blank=True)
-    category = models.CharField(max_length=50, blank=True)
-    default_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    duration_minutes = models.IntegerField(default=30)
-    is_standard = models.BooleanField(default=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    
-    def __str__(self):
-        return f"{self.name} ({self.code})"
+class DentalProcedureSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DentalProcedure
+        fields = ['id', 'name', 'code', 'description', 'category', 'default_price', 'duration_minutes', 'is_standard', 'created_at']
 
-class DentalChartTooth(models.Model):
-    """Model for teeth in a dental chart."""
-    QUADRANT_CHOICES = [
-        ('upper_right', 'Upper Right'),
-        ('upper_left', 'Upper Left'),
-        ('lower_right', 'Lower Right'),
-        ('lower_left', 'Lower Left'),
-    ]
-    
-    DENTITION_CHOICES = [
-        ('permanent', 'Permanent'),
-        ('primary', 'Primary'),
-    ]
-    
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='dental_chart_teeth')
-    number = models.CharField(max_length=10)  # Changed to support A-T notation
-    universal_number = models.IntegerField(null=True, blank=True)  # Made nullable for existing records
-    dentition_type = models.CharField(
-        max_length=10,
-        choices=DENTITION_CHOICES,
-        default='permanent'
-    )
-    name = models.CharField(max_length=100)
-    quadrant = models.CharField(max_length=20, choices=QUADRANT_CHOICES)
+class DentalChartConditionSerializer(serializers.ModelSerializer):
+    condition_name = serializers.CharField(source='condition.name', read_only=True)
+    condition_code = serializers.CharField(source='condition.code', read_only=True)
+    created_by = serializers.CharField(source='created_by.get_full_name', read_only=True)
+    updated_by = serializers.CharField(source='updated_by.get_full_name', read_only=True)
     
     class Meta:
-        unique_together = ('patient', 'number', 'dentition_type')
-    
-    def __str__(self):
-        return f"Tooth {self.number} ({self.name}) - {self.patient.name} ({self.get_dentition_type_display()})"
+        model = DentalChartCondition
+        fields = [
+            'id', 'condition_id', 'condition_name', 'condition_code', 'surface', 'description', 
+            'severity', 'created_at', 'updated_at', 'created_by', 'updated_by'
+        ]
+        read_only_fields = ['created_at', 'updated_at', 'created_by', 'updated_by']
 
-class DentalChartCondition(models.Model):
-    """Model for conditions on a specific tooth in the dental chart."""
-    SEVERITY_CHOICES = [
-        ('mild', 'Mild'),
-        ('moderate', 'Moderate'),
-        ('severe', 'Severe'),
-    ]
+class ProcedureNoteSerializer(serializers.ModelSerializer):
+    created_by = serializers.SerializerMethodField()
     
-    tooth = models.ForeignKey(DentalChartTooth, on_delete=models.CASCADE, related_name='conditions')
-    condition = models.ForeignKey(DentalCondition, on_delete=models.CASCADE)
-    surface = models.CharField(max_length=50, blank=True)
-    description = models.TextField(blank=True)
-    severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='moderate')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_dental_chart_conditions')
-    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='updated_dental_chart_conditions')
+    class Meta:
+        model = ProcedureNote
+        fields = ['id', 'note', 'appointment_date', 'created_by', 'created_at']
     
-    def __str__(self):
-        return f"{self.condition.name} on Tooth {self.tooth.number}"
+    def get_created_by(self, obj):
+        if obj.created_by:
+            return obj.created_by.get_full_name() or obj.created_by.username
+        return None
 
-class DentalChartProcedure(models.Model):
-    """Model for procedures performed on a specific tooth in the dental chart."""
-    STATUS_CHOICES = [
-        ('planned', 'Planned'),
-        ('in_progress', 'In Progress'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
-    ]
+class DentalChartProcedureSerializer(serializers.ModelSerializer):
+    procedure_name = serializers.CharField(source='procedure.name', read_only=True)
+    procedure_code = serializers.CharField(source='procedure.code', read_only=True)
+    performed_by = serializers.CharField(source='performed_by.get_full_name', read_only=True)
+    progress_notes = ProcedureNoteSerializer(source='notes', many=True, read_only=True)
     
-    tooth = models.ForeignKey(DentalChartTooth, on_delete=models.CASCADE, related_name='procedures')
-    procedure = models.ForeignKey(DentalProcedure, on_delete=models.CASCADE)
-    surface = models.CharField(max_length=50, blank=True)
-    description = models.TextField(blank=True)
-    date_performed = models.DateTimeField(null=True, blank=True)
-    performed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='performed_dental_chart_procedures')
-    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='planned')
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"{self.procedure.name} on Tooth {self.tooth.number}"
+    class Meta:
+        model = DentalChartProcedure
+        fields = [
+            'id', 'procedure_id', 'procedure_name', 'procedure_code', 'surface', 
+            'description', 'date_performed', 'performed_by', 'price', 'status', 
+            'created_at', 'progress_notes'
+        ]
+        read_only_fields = ['created_at', 'performed_by']
 
-class ProcedureNote(models.Model):
-    """Model for procedure progress notes."""
-    procedure = models.ForeignKey('DentalChartProcedure', on_delete=models.CASCADE, related_name='notes')
-    note = models.TextField()
-    appointment_date = models.DateTimeField()
-    created_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+class DentalChartToothSerializer(serializers.ModelSerializer):
+    conditions = DentalChartConditionSerializer(many=True, read_only=True)
+    procedures = DentalChartProcedureSerializer(many=True, read_only=True)
 
     class Meta:
-        ordering = ['-appointment_date']
-
-class ChartHistory(models.Model):
-    ACTIONS = [
-        ('add_condition', 'Add Condition'),
-        ('update_condition', 'Update Condition'),
-        ('remove_condition', 'Remove Condition'),
-        ('add_procedure', 'Add Procedure'),
-        ('update_procedure', 'Update Procedure'),
-        ('remove_procedure', 'Remove Procedure'),
-        ('add_procedure_note', 'Add Procedure Note'),
-    ]
-    
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
-    user = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True)
-    date = models.DateTimeField(auto_now_add=True)
-    action = models.CharField(max_length=50, choices=ACTIONS)
-    tooth_number = models.CharField(max_length=10)
-    category = models.CharField(max_length=50, null=True, blank=True)
-    details = models.JSONField()
-
-    class Meta:
-        ordering = ['-date']
-        indexes = [
-            models.Index(fields=['patient', 'tooth_number']),
-            models.Index(fields=['patient', 'category']),
-            models.Index(fields=['patient', 'date'])
+        model = DentalChartTooth
+        fields = [
+            'number',
+            'dentition_type',
+            'name',
+            'quadrant',
+            'conditions',
+            'procedures'
         ]
 
-    def __str__(self):
-        return f"{self.action} on Tooth {self.tooth_number} by {self.user.username}"
+class DentalChartSerializer(serializers.ModelSerializer):
+    teeth = DentalChartToothSerializer(source='dental_chart_teeth', many=True, read_only=True)
+    patient_name = serializers.CharField(source='name', read_only=True)
+    last_updated = serializers.SerializerMethodField()
     
-    def save(self, *args, **kwargs):
-        # Ensure that the tooth_number is always stored as a string
-        self.tooth_number = str(self.tooth_number)
-        super().save(*args, **kwargs) 
+    class Meta:
+        model = Patient
+        fields = ['id', 'patient_name', 'last_updated', 'teeth']
+    
+    def get_last_updated(self, obj):
+        # Get the most recent update to any tooth condition or procedure
+        latest_condition = DentalChartCondition.objects.filter(
+            tooth__patient=obj
+        ).order_by('-updated_at').first()
+        
+        latest_procedure = DentalChartProcedure.objects.filter(
+            tooth__patient=obj
+        ).order_by('-created_at').first()
+        
+        if latest_condition and latest_procedure:
+            return max(latest_condition.updated_at, latest_procedure.created_at)
+        elif latest_condition:
+            return latest_condition.updated_at
+        elif latest_procedure:
+            return latest_procedure.created_at
+        return None
+
+class ChartHistorySerializer(serializers.ModelSerializer):
+    action_display = serializers.CharField(source='get_action_display')
+    user_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ChartHistory
+        fields = ['id', 'date', 'action', 'action_display', 'tooth_number', 
+                 'category', 'details', 'user_name']
+    
+    def get_user_name(self, obj):
+        return obj.user.get_full_name() or obj.user.username
+
+class DentalChartViewSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    patient_id = serializers.IntegerField()
+    patient_name = serializers.CharField()
+    last_updated = serializers.DateTimeField()
+    permanent_teeth = DentalChartToothSerializer(many=True)
+    primary_teeth = DentalChartToothSerializer(many=True)
+
+class GeneralProcedureSerializer(serializers.ModelSerializer):
+    procedure_name = serializers.CharField(source='procedure.name', read_only=True)
+    procedure_code = serializers.CharField(source='procedure.code', read_only=True)
+    performed_by = serializers.CharField(source='dentist.get_full_name', read_only=True)
+    procedure_id = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = GeneralProcedure
+        fields = [
+            'id', 'procedure_id', 'procedure_name', 'procedure_code', 
+            'notes', 'description', 'date_performed', 'price',
+            'status', 'performed_by', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'procedure_name', 'procedure_code', 'performed_by', 
+                           'created_at', 'updated_at']
+        extra_kwargs = {
+            'procedure_id': {'required': True}
+        } 

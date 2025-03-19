@@ -18,6 +18,7 @@ import { ToothDetailPanel } from "@/components/dental-chart/ToothDetailPanel";
 import { ChartHistoryViewer } from "@/components/dental-chart/ChartHistoryViewer";
 import { CondensedChartHistory } from "@/components/dental-chart/CondensedChartHistory";
 import { ProceduresSummary } from "@/components/dental-chart/ProceduresSummary";
+import { GeneralProcedureDialog } from "@/components/dental-chart/GeneralProcedureDialog";
 
 export default function PatientDentalChartPage() {
   const router = useRouter();
@@ -31,6 +32,7 @@ export default function PatientDentalChartPage() {
   const [activeTab, setActiveTab] = useState("chart");
   const [isLoading, setIsLoading] = useState(true);
   const [patientName, setPatientName] = useState("");
+  const [showGeneralProcedureDialog, setShowGeneralProcedureDialog] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -314,6 +316,38 @@ export default function PatientDentalChartPage() {
     }
   };
 
+  const handleGeneralProcedureClick = () => {
+    setShowGeneralProcedureDialog(true);
+  };
+
+  const handleAddGeneralProcedure = async (procedureData: {
+    procedure_id: number;
+    notes?: string;
+    date_performed: string;
+    price?: number;
+    status: string;
+  }) => {
+    if (!currentClinic?.id) {
+      toast.error("No clinic selected");
+      return;
+    }
+
+    try {
+      await dentalChartService.addGeneralProcedure(
+        currentClinic.id.toString(),
+        patientId as string,
+        procedureData
+      );
+      
+      // Refresh the dental chart
+      await fetchDentalChart();
+      toast.success("General procedure added successfully");
+    } catch (error) {
+      console.error("Error adding general procedure:", error);
+      toast.error("Failed to add general procedure");
+    }
+  };
+
   return (
     <div className="container mx-auto py-6">
       <div className="flex items-center justify-between mb-6">
@@ -362,6 +396,7 @@ export default function PatientDentalChartPage() {
                       teeth={[...(dentalChart.permanent_teeth || []), ...(dentalChart.primary_teeth || [])]} 
                       onToothSelect={handleToothSelect} 
                 selectedTooth={selectedTooth}
+                      onGeneralProcedureClick={handleGeneralProcedureClick}
                     />
                   </CardContent>
                   <div className="px-6 pb-6">
@@ -453,6 +488,13 @@ export default function PatientDentalChartPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <GeneralProcedureDialog
+        open={showGeneralProcedureDialog}
+        onOpenChange={setShowGeneralProcedureDialog}
+        procedures={procedures}
+        onSubmit={handleAddGeneralProcedure}
+      />
     </div>
   );
 } 

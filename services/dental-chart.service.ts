@@ -279,6 +279,24 @@ export const dentalChartService = {
       `/clinics/${clinicId}/patients/${patientId}/dental-chart/tooth/${toothNumber}/procedure/${procedureId}/notes/`,
       data
     );
+  },
+
+  // Add general procedure
+  addGeneralProcedure: async (
+    clinicId: string,
+    patientId: string,
+    procedureData: {
+      procedure_id: number;
+      notes?: string;
+      date_performed: string;
+      price?: number;
+      status: string;
+    }
+  ): Promise<any> => {
+    return apiPost(
+      `/clinics/${clinicId}/patients/${patientId}/dental-chart/procedures/`,
+      procedureData
+    );
   }
 };
 

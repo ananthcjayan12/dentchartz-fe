@@ -4,19 +4,22 @@ import { useState, useEffect } from "react";
 import { Tooth } from "@/services/dental-chart.service";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus } from "lucide-react";
 
 interface DentalChartViewerProps {
   teeth: Tooth[];
   onToothSelect: (tooth: Tooth) => void;
   selectedTooth: Tooth | null;
   showPrimary?: boolean;
+  onGeneralProcedureClick?: () => void;
 }
 
 export function DentalChartViewer({ 
   teeth, 
   onToothSelect, 
   selectedTooth,
-  showPrimary = false
+  showPrimary = false,
+  onGeneralProcedureClick
 }: DentalChartViewerProps) {
   const [isPediatric, setIsPediatric] = useState(showPrimary);
   
@@ -305,14 +308,24 @@ export function DentalChartViewer({
   return (
     <div className="dental-chart">
       <div className="mb-4 flex justify-between items-center">
-        <h3 className="text-lg font-medium">
-          {isPediatric ? "Primary Dentition" : "Permanent Dentition"}
-        </h3>
-        <button 
-          onClick={handleToggleDentition}
-          className="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 rounded-md transition-colors"
+        <div className="flex items-center space-x-4">
+          <h3 className="text-lg font-medium">
+            {isPediatric ? "Primary Dentition" : "Permanent Dentition"}
+          </h3>
+          <button 
+            onClick={handleToggleDentition}
+            className="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 rounded-md transition-colors"
+          >
+            Switch to {isPediatric ? "Permanent" : "Primary"} Teeth
+          </button>
+        </div>
+        
+        <button
+          onClick={onGeneralProcedureClick}
+          className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
         >
-          Switch to {isPediatric ? "Permanent" : "Primary"} Teeth
+          <Plus className="h-4 w-4 mr-2" />
+          Add General Procedure
         </button>
       </div>
       
