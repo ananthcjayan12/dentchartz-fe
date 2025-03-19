@@ -13,7 +13,7 @@ import { format, parseISO } from "date-fns";
 import { 
   ArrowLeft, Calendar, Clock, Edit, User, FileText, 
   AlertTriangle, Phone, Mail, MapPin, ClipboardList, 
-  Activity, FileSymlink
+  Activity, FileSymlink, CreditCard
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -26,19 +26,34 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ToothIcon } from "@/components/icons/ToothIcon";
+import { PaymentForm } from "@/components/payments/PaymentForm";
+import { patientService, Patient } from "@/services/patient.service";
+import { dentalChartService, DentalChart, Tooth, DentalCondition, DentalProcedure } from "@/services/dental-chart.service";
+import { DentalChartViewer } from "@/components/dental-chart/DentalChartViewer";
+import { ToothDetailPanel } from "@/components/dental-chart/ToothDetailPanel";
+import { Separator } from "@/components/ui/separator";
 
 export default function AppointmentDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { currentClinic } = useAuth();
   const [appointment, setAppointment] = useState<Appointment | null>(null);
+  const [patient, setPatient] = useState<Patient | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
   const appointmentId = params.id;
 
+  // Dental chart states
+  const [dentalChart, setDentalChart] = useState<DentalChart | null>(null);
+  const [conditions, setConditions] = useState<DentalCondition[]>([]);
+  const [procedures, setProcedures] = useState<DentalProcedure[]>([]);
+  const [selectedTooth, setSelectedTooth] = useState<Tooth | null>(null);
+  const [isLoadingDentalChart, setIsLoadingDentalChart] = useState(false);
+
   useEffect(() => {
-    const fetchAppointment = async () => {
+    const fetchData = async () => {
       if (!currentClinic?.id) {
         toast.error("No clinic selected. Please select a clinic first.");
         router.push("/");
@@ -47,23 +62,90 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
       
       setIsLoading(true);
       try {
-        const data = await appointmentService.getAppointment(
+        const appointmentData = await appointmentService.getAppointment(
           currentClinic.id.toString(),
           appointmentId
         );
-        setAppointment(data);
-        console.log("Appointment data:", data);
+        
+        setAppointment(appointmentData);
+        
+        // Fetch patient data if appointment is loaded
+        if (appointmentData) {
+          const patientId = getPatientId(appointmentData);
+          if (patientId) {
+            const patientData = await patientService.getPatient(
+              currentClinic.id.toString(),
+              patientId.toString()
+            );
+            setPatient(patientData);
+          }
+        }
       } catch (error) {
         console.error("Error fetching appointment:", error);
         toast.error("Failed to load appointment details");
-        router.push("/appointments");
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchAppointment();
+    fetchData();
   }, [appointmentId, currentClinic?.id, router]);
+
+  // Fetch dental chart data when the dental chart tab is selected
+  const fetchDentalChartData = async () => {
+    if (!currentClinic?.id || !patient) return;
+    
+    setIsLoadingDentalChart(true);
+    try {
+      // Fetch dental chart
+      const chartData = await dentalChartService.getPatientDentalChart(
+        currentClinic.id.toString(),
+        patient.id
+      );
+      setDentalChart(chartData);
+      
+      // Fetch conditions and procedures
+      const conditionsData = await dentalChartService.getDentalConditions(
+        currentClinic.id.toString()
+      );
+      setConditions(conditionsData.results);
+      
+      const proceduresData = await dentalChartService.getDentalProcedures(
+        currentClinic.id.toString()
+      );
+      setProcedures(proceduresData.results);
+    } catch (error) {
+      console.error("Error fetching dental chart data:", error);
+      toast.error("Failed to load dental chart");
+    } finally {
+      setIsLoadingDentalChart(false);
+    }
+  };
+
+  const handleToothSelect = (tooth: Tooth) => {
+    setSelectedTooth(tooth);
+  };
+
+  const handleAddCondition = async (toothNumber: string, conditionData: any) => {
+    if (!currentClinic?.id || !patient) return;
+    
+    try {
+      await dentalChartService.addToothCondition(
+        currentClinic.id.toString(),
+        patient.id,
+        toothNumber,
+        conditionData
+      );
+      
+      // Refresh dental chart
+      fetchDentalChartData();
+      
+      toast.success("Condition added successfully");
+    } catch (error) {
+      console.error("Error adding condition:", error);
+      toast.error("Failed to add condition");
+    }
+  };
 
   const handleCancelAppointment = async () => {
     if (!currentClinic?.id || !appointment) return;
@@ -150,14 +232,14 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
   };
 
   // Helper function to get patient ID
-  const getPatientId = () => {
-    if (!appointment) return "";
+  const getPatientId = (appt: Appointment | null) => {
+    if (!appt) return "";
     
-    if (typeof appointment.patient === 'object' && appointment.patient !== null) {
-      return appointment.patient.id;
+    if (typeof appt.patient === 'object' && appt.patient !== null) {
+      return appt.patient.id;
     }
     
-    return appointment.patient;
+    return appt.patient;
   };
 
   // Helper function to get dentist name
@@ -205,11 +287,16 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
         <h1 className="text-3xl font-semibold text-gray-900">Appointment Details</h1>
       </div>
       
-      <Tabs defaultValue="details" className="w-full">
+      <Tabs defaultValue="details" className="w-full" onValueChange={(value) => {
+        if (value === "dental-chart" && patient) {
+          fetchDentalChartData();
+        }
+      }}>
         <TabsList className="mb-4">
           <TabsTrigger value="details">Appointment Details</TabsTrigger>
           <TabsTrigger value="dental-chart">Dental Chart</TabsTrigger>
           <TabsTrigger value="treatment-history">Treatment History</TabsTrigger>
+          <TabsTrigger value="payment">Payment</TabsTrigger>
         </TabsList>
         
         <TabsContent value="details">
@@ -253,7 +340,7 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
                       </div>
                     )}
                     <Button variant="link" className="px-0 mt-1" asChild>
-                      <Link href={`/patients/${getPatientId()}`}>
+                      <Link href={`/patients/${getPatientId(appointment)}`}>
                         View Patient Profile
                       </Link>
                     </Button>
@@ -409,14 +496,14 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
                 )}
                 
                 <Button variant="outline" className="w-full" asChild>
-                  <Link href={`/patients/${getPatientId()}/dental-chart`}>
+                  <Link href={`/patients/${getPatientId(appointment)}/dental-chart`}>
                     <ToothIcon className="mr-2 h-4 w-4" />
                     Dental Chart
                   </Link>
                 </Button>
                 
                 <Button variant="outline" className="w-full" asChild>
-                  <Link href={`/patients/${getPatientId()}/treatments`}>
+                  <Link href={`/patients/${getPatientId(appointment)}/treatments`}>
                     <Activity className="mr-2 h-4 w-4" />
                     View Treatment History
                   </Link>
@@ -432,16 +519,76 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
               <CardTitle>Dental Chart for {getPatientName()}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <FileSymlink className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Dental Chart</h3>
-                <p className="text-gray-500 mb-4">View and update the patient's dental chart</p>
-                <Button asChild>
-                  <Link href={`/patients/${getPatientId()}/dental-chart`}>
-                    Go to Dental Chart
-                  </Link>
-                </Button>
-              </div>
+              {!patient ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Loading patient information...</p>
+                </div>
+              ) : isLoadingDentalChart ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                  <p className="mt-4 text-gray-500">Loading dental chart...</p>
+                </div>
+              ) : dentalChart ? (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2">
+                    <DentalChartViewer 
+                      teeth={[...(dentalChart.permanent_teeth || []), ...(dentalChart.primary_teeth || [])]} 
+                      onToothSelect={handleToothSelect} 
+                      selectedTooth={selectedTooth}
+                    />
+                    <Separator className="my-4" />
+                    <div className="flex justify-end">
+                      <Button variant="outline" asChild>
+                        <Link href={`/patients/${getPatientId(appointment)}/dental-chart`}>
+                          <FileSymlink className="mr-2 h-4 w-4" />
+                          Open Full Dental Chart
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    {selectedTooth ? (
+                      <ToothDetailPanel
+                        tooth={selectedTooth}
+                        conditions={conditions}
+                        procedures={procedures}
+                        onAddCondition={(conditionData) => {
+                          handleAddCondition(selectedTooth.number.toString(), conditionData);
+                        }}
+                        onUpdateCondition={() => fetchDentalChartData()}
+                        onDeleteCondition={() => fetchDentalChartData()}
+                        onAddProcedure={() => fetchDentalChartData()}
+                        onUpdateProcedure={() => fetchDentalChartData()}
+                        onDeleteProcedure={() => fetchDentalChartData()}
+                        onAddProcedureNote={() => fetchDentalChartData()}
+                        clinicId={currentClinic?.id.toString()}
+                        patientId={patient.id}
+                        onClose={() => setSelectedTooth(null)}
+                      />
+                    ) : (
+                      <div className="bg-gray-50 p-6 rounded-lg text-center">
+                        <ToothIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No Tooth Selected</h3>
+                        <p className="text-gray-500">
+                          Click on a tooth in the chart to view and edit its details
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <FileSymlink className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Dental Chart Found</h3>
+                  <p className="text-gray-500 mb-4">This patient doesn't have a dental chart yet</p>
+                  <Button asChild>
+                    <Link href={`/patients/${getPatientId(appointment)}/dental-chart`}>
+                      Create Dental Chart
+                    </Link>
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -457,11 +604,59 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Treatment History</h3>
                 <p className="text-gray-500 mb-4">View the patient's treatment history and records</p>
                 <Button asChild>
-                  <Link href={`/patients/${getPatientId()}/treatments`}>
+                  <Link href={`/patients/${getPatientId(appointment)}/treatments`}>
                     View Treatment History
                   </Link>
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="payment">
+          <Card>
+            <CardHeader>
+              <CardTitle>Record Payment for {getPatientName()}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {patient ? (
+                <div>
+                  {showPaymentForm ? (
+                    <PaymentForm 
+                      patient={patient} 
+                      appointment={appointment}
+                      isBalancePayment={false}
+                      onSuccess={() => {
+                        toast.success("Payment recorded successfully");
+                        setShowPaymentForm(false);
+                      }}
+                    />
+                  ) : (
+                    <div className="text-center py-8">
+                      <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Record Payment</h3>
+                      <p className="text-gray-500 mb-4">
+                        Record a payment for this appointment
+                      </p>
+                      <div className="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-3 justify-center">
+                        <Button onClick={() => setShowPaymentForm(true)}>
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          Record New Payment
+                        </Button>
+                        <Button variant="outline" asChild>
+                          <Link href={`/patients/${getPatientId(appointment)}/payments?clinic_id=${currentClinic?.id}`}>
+                            View All Payments
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Loading patient information...</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -21,9 +21,10 @@ interface PaymentFormProps {
   appointment?: Appointment;
   isBalancePayment: boolean;
   balanceAmount?: number;
+  onSuccess?: () => void;
 }
 
-export function PaymentForm({ patient, appointment, isBalancePayment, balanceAmount }: PaymentFormProps) {
+export function PaymentForm({ patient, appointment, isBalancePayment, balanceAmount, onSuccess }: PaymentFormProps) {
   const router = useRouter();
   const { currentClinic } = useAuth();
   
@@ -89,9 +90,8 @@ export function PaymentForm({ patient, appointment, isBalancePayment, balanceAmo
       return;
     }
     
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-      
       const paymentData: CreatePaymentData = {
         patient_id: patient.id,
         appointment_id: appointment?.id,
@@ -112,7 +112,13 @@ export function PaymentForm({ patient, appointment, isBalancePayment, balanceAmo
       await paymentService.createPayment(currentClinic.id, paymentData);
       
       toast.success("Payment recorded successfully");
-      router.push(`/patients/${patient.id}/payments?clinic_id=${currentClinic.id}`);
+      
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push(`/patients/${patient.id}/payments?clinic_id=${currentClinic.id}`);
+      }
     } catch (error) {
       console.error("Error creating payment:", error);
       toast.error("Failed to record payment");
