@@ -25,12 +25,15 @@ interface GeneralProcedure {
   id: number;
   procedure_name: string;
   procedure_code: string;
-  notes: string;
-  procedure_notes: ProcedureNote[];
+  procedure_notes: string;
+  description: string | null;
   date_performed: string;
   price: string | number;
   status: string;
   performed_by: string;
+  created_at: string;
+  updated_at: string;
+  progress_notes: ProcedureNote[];
 }
 
 interface ProcedureNote {
@@ -97,7 +100,7 @@ export function GeneralProceduresPanel({
     setSelectedProcedure(procedure);
     setEditPrice(procedure.price.toString());
     setEditStatus(procedure.status);
-    setEditNotes(procedure.notes || "");
+    setEditNotes(procedure.procedure_notes || "");
     setEditDate(procedure.date_performed);
     setShowEditDialog(true);
   };
@@ -148,13 +151,16 @@ export function GeneralProceduresPanel({
     if (!currentClinic?.id || !selectedProcedure) return;
     
     try {
+      // Format the date to match the backend's expected format "YYYY-MM-DD HH:MM"
+      const formattedDate = format(parseISO(noteDate), "yyyy-MM-dd HH:mm");
+
       await dentalChartService.addGeneralProcedureNote(
         currentClinic.id.toString(),
         patientId,
         selectedProcedure.id,
         {
           note: noteText,
-          appointment_date: noteDate
+          appointment_date: formattedDate
         }
       );
       
@@ -287,19 +293,12 @@ export function GeneralProceduresPanel({
                   </div>
                 </div>
                 
-                {procedure.notes && (
-                  <div className="mb-3">
-                    <p className="text-xs text-gray-500">Notes</p>
-                    <p className="text-sm">{procedure.notes}</p>
-                  </div>
-                )}
-                
-                {procedure.procedure_notes && procedure.procedure_notes.length > 0 && (
+                {procedure.progress_notes && procedure.progress_notes.length > 0 && (
                   <div>
                     <Separator className="my-2" />
                     <p className="text-xs text-gray-500 mb-2">Progress Notes</p>
                     <div className="space-y-2">
-                      {procedure.procedure_notes.map((note) => (
+                      {procedure.progress_notes.map((note) => (
                         <div key={note.id} className="bg-gray-50 p-2 rounded-md">
                           <div className="flex justify-between items-start">
                             <p className="text-sm">{note.note}</p>
