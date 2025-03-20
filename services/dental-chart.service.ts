@@ -297,6 +297,61 @@ export const dentalChartService = {
       `/clinics/${clinicId}/patients/${patientId}/general-procedures/`,
       procedureData
     );
+  },
+
+  // Get general procedures
+  getGeneralProcedures: async (
+    clinicId: string,
+    patientId: string
+  ): Promise<any> => {
+    return apiGet(
+      `/clinics/${clinicId}/patients/${patientId}/general-procedures/`
+    );
+  },
+
+  // Update general procedure
+  updateGeneralProcedure: async (
+    clinicId: string,
+    patientId: string,
+    procedureId: number,
+    updateData: {
+      notes?: string;
+      date_performed?: string;
+      price?: number;
+      status?: string;
+    }
+  ): Promise<any> => {
+    return apiPatch(
+      `/clinics/${clinicId}/patients/${patientId}/general-procedures/${procedureId}/`,
+      updateData
+    );
+  },
+
+  // Delete general procedure
+  deleteGeneralProcedure: async (
+    clinicId: string,
+    patientId: string,
+    procedureId: number
+  ): Promise<void> => {
+    return apiDelete(
+      `/clinics/${clinicId}/patients/${patientId}/general-procedures/${procedureId}/`
+    );
+  },
+
+  // Add general procedure note
+  addGeneralProcedureNote: async (
+    clinicId: string,
+    patientId: string,
+    procedureId: number,
+    data: {
+      note: string;
+      appointment_date: string;
+    }
+  ): Promise<any> => {
+    return apiPost(
+      `/clinics/${clinicId}/patients/${patientId}/general-procedures/${procedureId}/notes/`,
+      data
+    );
   }
 };
 

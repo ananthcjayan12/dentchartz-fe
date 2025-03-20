@@ -19,6 +19,7 @@ import { ChartHistoryViewer } from "@/components/dental-chart/ChartHistoryViewer
 import { CondensedChartHistory } from "@/components/dental-chart/CondensedChartHistory";
 import { ProceduresSummary } from "@/components/dental-chart/ProceduresSummary";
 import { GeneralProcedureDialog } from "@/components/dental-chart/GeneralProcedureDialog";
+import { GeneralProceduresPanel } from "@/components/dental-chart/GeneralProceduresPanel";
 
 export default function PatientDentalChartPage() {
   const router = useRouter();
@@ -372,11 +373,12 @@ export default function PatientDentalChartPage() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="chart" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="chart">Dental Chart</TabsTrigger>
           <TabsTrigger value="procedures">Procedures</TabsTrigger>
-          <TabsTrigger value="history">Chart History</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
+          <TabsTrigger value="general">General Procedures</TabsTrigger>
         </TabsList>
 
         <TabsContent value="chart">
@@ -484,6 +486,21 @@ export default function PatientDentalChartPage() {
             </CardHeader>
             <CardContent>
               <ChartHistoryViewer patientId={patientId as string} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="general">
+          <Card>
+            <CardHeader>
+              <CardTitle>General Procedures</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <GeneralProceduresPanel 
+                patientId={patientId as string} 
+                onAddGeneralProcedure={handleGeneralProcedureClick}
+                onRefresh={fetchDentalChart}
+              />
             </CardContent>
           </Card>
         </TabsContent>
