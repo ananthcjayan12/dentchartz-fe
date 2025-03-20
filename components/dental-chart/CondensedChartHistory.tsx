@@ -107,6 +107,8 @@ export function CondensedChartHistory({ patientId, toothNumber, limit }: Condens
         return <Minus className="h-4 w-4 text-red-500" />;
       case "add_procedure_note":
         return <Calendar className="h-4 w-4 text-purple-500" />;
+      case "add_general_procedure":
+        return <Plus className="h-4 w-4" />;
       default:
         return <AlertCircle className="h-4 w-4 text-gray-500" />;
     }
@@ -128,6 +130,8 @@ export function CondensedChartHistory({ patientId, toothNumber, limit }: Condens
         return <Badge className="bg-red-100 text-red-800">Removed Procedure</Badge>;
       case "add_procedure_note":
         return <Badge className="bg-purple-100 text-purple-800">Added Note</Badge>;
+      case "add_general_procedure":
+        return <Badge variant="outline">General Procedure</Badge>;
       default:
         return <Badge variant="outline">{action.replace(/_/g, " ")}</Badge>;
     }
@@ -141,66 +145,79 @@ export function CondensedChartHistory({ patientId, toothNumber, limit }: Condens
   };
   
   const formatDetails = (entry: EnhancedChartHistoryEntry) => {
-    if (!entry.details) return null;
-    
-    const details = entry.details;
-    
-    switch (entry.action) {
-      case "add_procedure":
-      case "update_procedure":
-        return (
-          <>
-            <p className="text-sm text-gray-600">
-              {details.procedure_name}
-              {details.surface && ` (Surface: ${details.surface})`}
-            </p>
-            {details.status && (
-              <p className="text-sm text-gray-500">
-                Status: {details.status}
-                {details.price && ` - $${Number(details.price).toFixed(2)}`}
-              </p>
-            )}
-            {details.description && (
-              <p className="text-sm text-gray-500 mt-1">
-                {details.description}
-              </p>
-            )}
-          </>
-        );
-        
-      case "add_condition":
-      case "update_condition":
-        return (
-          <>
-            <p className="text-sm text-gray-600">
-              {details.condition_name}
-              {details.surface && ` (Surface: ${details.surface})`}
-            </p>
-            {details.severity && (
-              <p className="text-sm text-gray-500">
-                Severity: {details.severity}
-              </p>
-            )}
-            {details.description && (
-              <p className="text-sm text-gray-500 mt-1">
-                {details.description}
-              </p>
-            )}
-          </>
-        );
-        
-      case "add_procedure_note":
-        return (
-          <div className="mt-1 p-2 bg-gray-50 rounded-md border border-gray-100">
-            <p className="text-sm text-gray-600 italic">
-              "{details.note || details.description || "Note added"}"
-            </p>
-          </div>
-        );
-        
-      default:
-        return null;
+    const { details } = entry;
+    if (!details) return null;
+
+    if (entry.action === "add_general_procedure") {
+      return (
+        <div>
+          <p className="text-sm text-gray-700">
+            Procedure: {details.procedure_name}
+          </p>
+          <p className="text-sm text-gray-700">
+            Status: {details.status}
+          </p>
+          <p className="text-sm text-gray-700">
+            Price: {details.price}
+          </p>
+        </div>
+      );
     }
+
+    if (entry.action === "add_procedure") {
+      return (
+        <>
+          <p className="text-sm text-gray-600">
+            {details.procedure_name}
+            {details.surface && ` (Surface: ${details.surface})`}
+          </p>
+          {details.status && (
+            <p className="text-sm text-gray-500">
+              Status: {details.status}
+              {details.price && ` - $${Number(details.price).toFixed(2)}`}
+            </p>
+          )}
+          {details.description && (
+            <p className="text-sm text-gray-500 mt-1">
+              {details.description}
+            </p>
+          )}
+        </>
+      );
+    }
+    
+    if (entry.action === "add_condition") {
+      return (
+        <>
+          <p className="text-sm text-gray-600">
+            {details.condition_name}
+            {details.surface && ` (Surface: ${details.surface})`}
+          </p>
+          {details.severity && (
+            <p className="text-sm text-gray-500">
+              Severity: {details.severity}
+            </p>
+          )}
+          {details.description && (
+            <p className="text-sm text-gray-500 mt-1">
+              {details.description}
+            </p>
+          )}
+        </>
+      );
+    }
+    
+    if (entry.action === "add_procedure_note") {
+      return (
+        <div className="mt-1 p-2 bg-gray-50 rounded-md border border-gray-100">
+          <p className="text-sm text-gray-600 italic">
+            "{details.note || details.description || "Note added"}"
+          </p>
+        </div>
+      );
+    }
+    
+    return null;
   };
   
   if (isLoading) {

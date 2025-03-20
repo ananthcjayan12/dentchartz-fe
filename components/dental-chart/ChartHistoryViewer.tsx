@@ -75,6 +75,8 @@ export function ChartHistoryViewer({ patientId }: ChartHistoryViewerProps) {
         return <Minus className="h-4 w-4" />;
       case "add_procedure_note":
         return <Calendar className="h-4 w-4" />;
+      case "add_general_procedure":
+        return <Plus className="h-4 w-4" />;
       default:
         return <AlertCircle className="h-4 w-4" />;
     }
@@ -95,6 +97,8 @@ export function ChartHistoryViewer({ patientId }: ChartHistoryViewerProps) {
         return "bg-red-100 text-red-800";
       case "add_procedure_note":
         return "bg-purple-100 text-purple-800";
+      case "add_general_procedure":
+        return "bg-gray-100 text-gray-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -163,7 +167,33 @@ export function ChartHistoryViewer({ patientId }: ChartHistoryViewerProps) {
       );
     }
     
+    if (action === "add_general_procedure") {
+      return (
+        <div>
+          <p className="text-sm">
+            Procedure: {details.procedure_name}
+          </p>
+          <p className="text-sm">
+            Status: {details.status}
+          </p>
+          <p className="text-sm">
+            Price: {details.price}
+          </p>
+        </div>
+      );
+    }
+    
     return <div>{JSON.stringify(details)}</div>;
+  };
+  
+  // Helper function to get action badge
+  const getActionBadge = (action: string) => {
+    switch (action) {
+      case "add_general_procedure":
+        return <Badge variant="outline">General Procedure</Badge>;
+      default:
+        return null;
+    }
   };
   
   return (
