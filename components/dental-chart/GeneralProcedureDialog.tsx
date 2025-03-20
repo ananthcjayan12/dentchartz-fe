@@ -79,7 +79,11 @@ export function GeneralProcedureDialog({
               </SelectTrigger>
               <SelectContent>
                 {procedures
-                  .filter(proc => proc.is_general)
+                  .filter(
+                    proc =>
+                      proc.category &&
+                      proc.category.toLowerCase() === "general"
+                  )
                   .map(procedure => (
                     <SelectItem 
                       key={procedure.id} 
