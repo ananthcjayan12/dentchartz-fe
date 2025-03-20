@@ -294,7 +294,7 @@ export const dentalChartService = {
     }
   ): Promise<any> => {
     return apiPost(
-      `/clinics/${clinicId}/patients/${patientId}/dental-chart/procedures/`,
+      `/clinics/${clinicId}/patients/${patientId}/general-procedures/`,
       procedureData
     );
   }

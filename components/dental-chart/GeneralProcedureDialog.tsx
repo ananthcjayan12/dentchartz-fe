@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { DentalProcedure } from "@/services/dental-chart.service";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface GeneralProcedureDialogProps {
   open: boolean;
@@ -34,6 +35,7 @@ export function GeneralProcedureDialog({
   const [price, setPrice] = useState("");
   const [status, setStatus] = useState("completed");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [procedureDate, setProcedureDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +45,7 @@ export function GeneralProcedureDialog({
       await onSubmit({
         procedure_id: parseInt(selectedProcedure),
         notes: notes,
-        date_performed: format(new Date(), "yyyy-MM-dd"),
+        date_performed: procedureDate,
         price: price ? parseFloat(price) : undefined,
         status: status
       });
@@ -56,6 +58,7 @@ export function GeneralProcedureDialog({
       onOpenChange(false);
     } catch (error) {
       console.error("Error submitting procedure:", error);
+      toast.error("Failed to add general procedure");
     } finally {
       setIsSubmitting(false);
     }
@@ -131,6 +134,17 @@ export function GeneralProcedureDialog({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add any notes..."
               rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="date_performed">Date Performed</Label>
+            <Input
+              id="date_performed"
+              type="date"
+              value={procedureDate}
+              onChange={(e) => setProcedureDate(e.target.value)}
+              placeholder="Enter date performed"
             />
           </div>
 
