@@ -46,6 +46,7 @@ function PatientsContent() {
           searchQuery, 
           limit
         );
+        console.log("Patient data:", response.results);
         setPatients(response.results);
         setTotalPatients(response.count);
       } catch (error) {
@@ -127,7 +128,9 @@ function PatientsContent() {
                 <TableBody>
                   {patients.map((patient) => (
                     <TableRow key={patient.id}>
-                      <TableCell className="font-medium">{patient.full_name}</TableCell>
+                      <TableCell className="font-medium">
+                        {patient.name || `Patient #${patient.id}`}
+                      </TableCell>
                       <TableCell>
                         {patient.phone && (
                           <div>{patient.phone}</div>

@@ -445,8 +445,13 @@ export function AppointmentForm({ appointment, onSuccess, preSelectedPatientId }
                       </SelectTrigger>
                       <SelectContent>
                         {dentists.map((dentist) => (
-                          <SelectItem key={dentist.id} value={dentist.id}>
-                            {dentist.first_name} {dentist.last_name}
+                          <SelectItem key={dentist.id} value={dentist.id.toString()}>
+                            {dentist.name || 
+                             dentist.full_name || 
+                             (dentist.first_name && dentist.last_name ? 
+                              `${dentist.first_name} ${dentist.last_name}` : 
+                              dentist.username || 
+                              `Dentist #${dentist.id}`)}
                           </SelectItem>
                         ))}
                       </SelectContent>

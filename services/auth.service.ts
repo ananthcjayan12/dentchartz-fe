@@ -12,7 +12,7 @@ axios.interceptors.response.use(
     const originalRequest = error.config;
 
     // If the error is 401 and we haven't already tried to refresh
-    if (error.response.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
@@ -23,15 +23,15 @@ axios.interceptors.response.use(
           return Promise.reject(error);
         }
 
-        // Try to refresh the token
-        const response = await axios.post(`${API_URL}/auth/refresh/`, {
+        // Try to refresh the token - updated endpoint
+        const response = await axios.post(`${API_URL}/auth/token/refresh/`, {
           refresh: refreshToken,
         });
 
         const { access } = response.data;
 
         // Update the token in localStorage
-        localStorage.setItem("token", access);
+        localStorage.setItem("accessToken", access);
 
         // Update the authorization header
         axios.defaults.headers.common["Authorization"] = `Bearer ${access}`;
@@ -41,7 +41,7 @@ axios.interceptors.response.use(
         return axios(originalRequest);
       } catch (refreshError) {
         // If refresh fails, redirect to login
-        localStorage.removeItem("token");
+        localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         window.location.href = "/login";
         return Promise.reject(refreshError);
@@ -119,7 +119,8 @@ export const authService = {
       return { access: "mock-refreshed-access-token" };
     }
     
-    const response = await axios.post(`${API_URL}/auth/refresh/`, {
+    // Updated endpoint
+    const response = await axios.post(`${API_URL}/auth/token/refresh/`, {
       refresh: refreshToken,
     });
     return response.data;
