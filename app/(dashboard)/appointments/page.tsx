@@ -1,5 +1,6 @@
 "use client";
 
+import React, { Suspense } from "react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -25,7 +26,11 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-export default function AppointmentsPage() {
+// Tell Next.js this is a dynamic page that shouldn't be prerendered
+export const dynamic = "force-dynamic";
+
+// Component that uses useSearchParams
+function AppointmentsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { currentClinic } = useAuth();
@@ -302,5 +307,14 @@ export default function AppointmentsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function AppointmentsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading appointments...</div>}>
+      <AppointmentsContent />
+    </Suspense>
   );
 } 

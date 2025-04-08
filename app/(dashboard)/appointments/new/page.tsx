@@ -1,5 +1,6 @@
 "use client";
 
+import React, { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AppointmentForm } from "@/components/appointments/AppointmentForm";
@@ -7,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function NewAppointmentPage() {
+// Component that uses the useSearchParams hook
+function NewAppointmentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const patientId = searchParams.get("patientId");
@@ -39,5 +41,14 @@ export default function NewAppointmentPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function NewAppointmentPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading appointment form...</div>}>
+      <NewAppointmentContent />
+    </Suspense>
   );
 } 
