@@ -61,21 +61,7 @@ const navItems: NavItem[] = [
     icon: <Settings className="h-5 w-5" />,
     adminOnly: true,
   },
-  {
-    title: "Dental Charts",
-    href: "/dental-charts",
-    icon: <ToothIcon className="h-5 w-5" />,
-    submenu: [
-      {
-        title: "Recent Charts",
-        href: "/dental-charts/recent",
-      },
-      {
-        title: "Chart Templates",
-        href: "/dental-charts/templates",
-      }
-    ]
-  },
+
 ];
 
 export function Sidebar({ userRole = "staff" }: { userRole?: string }) {

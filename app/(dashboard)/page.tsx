@@ -297,7 +297,7 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <Card className="shadow-sm hover:shadow transition-shadow">
             <CardContent className="p-6 flex flex-col items-center justify-center text-center">
               <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mb-3">
@@ -335,20 +335,6 @@ export default function DashboardPage() {
               <Button variant="ghost" size="sm" asChild className="mt-2">
                 <Link href="/payments">
                   Record
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card className="shadow-sm hover:shadow transition-shadow">
-            <CardContent className="p-6 flex flex-col items-center justify-center text-center">
-              <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mb-3">
-                <LineChart className="h-6 w-6" />
-              </div>
-              <h3 className="font-medium">View Reports</h3>
-              <Button variant="ghost" size="sm" asChild className="mt-2">
-                <Link href="/reports">
-                  View
                 </Link>
               </Button>
             </CardContent>
