@@ -13,7 +13,8 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Clock, FileText, History } from "lucide-react";
 import { toast } from "sonner";
-import { DentalChartViewer } from "@/components/dental-chart/DentalChartViewer";
+import { EnhancedDentalChartViewer } from "@/components/dental-chart/EnhancedDentalChartViewer";
+import { dentalChartMultiSelectService } from "@/services/dental-chart-multi-select.service";
 import { ToothDetailPanel } from "@/components/dental-chart/ToothDetailPanel";
 import { ChartHistoryViewer } from "@/components/dental-chart/ChartHistoryViewer";
 import { CondensedChartHistory } from "@/components/dental-chart/CondensedChartHistory";
@@ -24,7 +25,8 @@ import { GeneralProceduresPanel } from "@/components/dental-chart/GeneralProcedu
 export default function PatientDentalChartPage() {
   const router = useRouter();
   const { currentClinic } = useAuth();
-  const { id: patientId } = useParams();
+  const params = useParams();
+  const patientId = Array.isArray(params.id) ? params.id[0] : params.id;
   
   const [dentalChart, setDentalChart] = useState<DentalChart | null>(null);
   const [conditions, setConditions] = useState<DentalCondition[]>([]);
@@ -394,11 +396,65 @@ export default function PatientDentalChartPage() {
               <CardTitle>Dental Chart</CardTitle>
             </CardHeader>
                   <CardContent>
-                    <DentalChartViewer 
+                    <EnhancedDentalChartViewer 
                       teeth={[...(dentalChart.permanent_teeth || []), ...(dentalChart.primary_teeth || [])]} 
                       onToothSelect={handleToothSelect} 
-                selectedTooth={selectedTooth}
+                      selectedTooth={selectedTooth}
+                      conditions={conditions}
+                      procedures={procedures}
                       onGeneralProcedureClick={handleGeneralProcedureClick}
+                      onAddConditionToMultiple={async (selectedTeeth, conditionData) => {
+                        try {
+                          const result = await dentalChartMultiSelectService.addConditionToMultipleTeethWithProgress(
+                            currentClinic!.id.toString(),
+                            patientId as string,
+                            selectedTeeth,
+                            conditionData,
+                            (completed, total, currentTooth) => {
+                              console.log(`Progress: ${completed}/${total} - Processing tooth ${currentTooth.number}`);
+                            }
+                          );
+
+                          if (result.success.length > 0) {
+                            toast.success(`Successfully added condition to ${result.success.length} teeth`);
+                          }
+
+                          if (result.failed.length > 0) {
+                            toast.error(`Failed to add condition to ${result.failed.length} teeth`);
+                          }
+
+                          await fetchDentalChart();
+                        } catch (error) {
+                          console.error("Error adding conditions to multiple teeth:", error);
+                          toast.error("Failed to add conditions to teeth");
+                        }
+                      }}
+                      onAddProcedureToMultiple={async (selectedTeeth, procedureData) => {
+                        try {
+                          const result = await dentalChartMultiSelectService.addProcedureToMultipleTeethWithProgress(
+                            currentClinic!.id.toString(),
+                            patientId as string,
+                            selectedTeeth,
+                            procedureData,
+                            (completed, total, currentTooth) => {
+                              console.log(`Progress: ${completed}/${total} - Processing tooth ${currentTooth.number}`);
+                            }
+                          );
+
+                          if (result.success.length > 0) {
+                            toast.success(`Successfully added procedure to ${result.success.length} teeth`);
+                          }
+
+                          if (result.failed.length > 0) {
+                            toast.error(`Failed to add procedure to ${result.failed.length} teeth`);
+                          }
+
+                          await fetchDentalChart();
+                        } catch (error) {
+                          console.error("Error adding procedures to multiple teeth:", error);
+                          toast.error("Failed to add procedures to teeth");
+                        }
+                      }}
                     />
                   </CardContent>
                   <div className="px-6 pb-6">
@@ -419,8 +475,8 @@ export default function PatientDentalChartPage() {
                       {selectedTooth && (
                         <ToothDetailPanel
                           tooth={selectedTooth}
-                          conditions={conditions}
-                          procedures={procedures}
+                          conditions={conditions as any}
+                          procedures={procedures as any}
                           onAddCondition={(conditionData) => {
                             console.log("onAddCondition callback triggered with:", conditionData);
                             handleAddCondition(selectedTooth.number.toString(), conditionData);

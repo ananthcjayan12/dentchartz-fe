@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { dentalChartService, Tooth, DentalCondition, DentalProcedure, DentalChart } from "@/services/dental-chart.service";
-import { EnhancedDentalChartViewer } from "@/components/dental-chart/EnhancedDentalChartViewer";
-import { ToothDetailPanel } from "@/components/dental-chart/ToothDetailPanel";
+import { EnhancedDentalChartViewer } from "./EnhancedDentalChartViewer";
+import { ToothDetailPanel } from "./ToothDetailPanel";
 import { dentalChartMultiSelectService } from "@/services/dental-chart-multi-select.service";
-import { useParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,8 +13,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-export default function PatientDentalChartPage() {
-  const params = useParams();
+interface DentalChartPageTemplateProps {
+  clinicId: string;
+  patientId: string;
+  backUrl?: string;
+  title?: string;
+}
+
+export function DentalChartPageTemplate({
+  clinicId,
+  patientId,
+  backUrl,
+  title = "Dental Chart"
+}: DentalChartPageTemplateProps) {
   const { currentClinic } = useAuth();
   const [dentalChart, setDentalChart] = useState<DentalChart | null>(null);
   const [conditions, setConditions] = useState<DentalCondition[]>([]);
@@ -26,28 +36,19 @@ export default function PatientDentalChartPage() {
   const [errorMessage, setErrorMessage] = useState("");
   
   const fetchDentalChart = async () => {
-    const patientId = Array.isArray(params.patientId) ? params.patientId[0] : params.patientId;
-    if (!currentClinic?.id || !patientId) return;
+    if (!clinicId || !patientId) return;
     
     setIsLoading(true);
     try {
       // Fetch dental chart
-      const data = await dentalChartService.getPatientDentalChart(
-        currentClinic.id.toString(),
-        patientId
-      );
-      console.log("Fetched dental chart:", data);
+      const data = await dentalChartService.getPatientDentalChart(clinicId, patientId);
       setDentalChart(data);
 
       // Fetch conditions and procedures
-      const conditionsData = await dentalChartService.getDentalConditions(
-        currentClinic.id.toString()
-      );
+      const conditionsData = await dentalChartService.getDentalConditions(clinicId);
       setConditions(conditionsData.results);
       
-      const proceduresData = await dentalChartService.getDentalProcedures(
-        currentClinic.id.toString()
-      );
+      const proceduresData = await dentalChartService.getDentalProcedures(clinicId);
       setProcedures(proceduresData.results);
     } catch (error) {
       console.error("Error fetching dental chart:", error);
@@ -59,21 +60,19 @@ export default function PatientDentalChartPage() {
   
   useEffect(() => {
     fetchDentalChart();
-  }, [currentClinic?.id, params.patientId]);
+  }, [clinicId, patientId]);
   
   const handleToothSelect = (tooth: Tooth) => {
-    console.log("Selected tooth:", tooth);
     setSelectedTooth(tooth);
   };
   
   // Handle single tooth condition addition
   const handleAddCondition = async (conditionData: any) => {
-    const patientId = Array.isArray(params.patientId) ? params.patientId[0] : params.patientId;
-    if (!selectedTooth || !currentClinic?.id || !patientId) return;
+    if (!selectedTooth || !clinicId || !patientId) return;
 
     try {
       await dentalChartService.addToothCondition(
-        currentClinic.id.toString(),
+        clinicId,
         patientId,
         selectedTooth.number,
         {
@@ -92,12 +91,11 @@ export default function PatientDentalChartPage() {
 
   // Handle single tooth procedure addition
   const handleAddProcedure = async (procedureData: any) => {
-    const patientId = Array.isArray(params.patientId) ? params.patientId[0] : params.patientId;
-    if (!selectedTooth || !currentClinic?.id || !patientId) return;
+    if (!selectedTooth || !clinicId || !patientId) return;
 
     try {
       await dentalChartService.addToothProcedure(
-        currentClinic.id.toString(),
+        clinicId,
         patientId,
         selectedTooth.number,
         procedureData
@@ -113,12 +111,11 @@ export default function PatientDentalChartPage() {
   
   // Handle multi-select condition addition
   const handleAddConditionToMultiple = async (selectedTeeth: Tooth[], conditionData: any) => {
-    const patientId = Array.isArray(params.patientId) ? params.patientId[0] : params.patientId;
-    if (!currentClinic?.id || !patientId) return;
+    if (!clinicId || !patientId) return;
 
     try {
       const result = await dentalChartMultiSelectService.addConditionToMultipleTeethWithProgress(
-        currentClinic.id.toString(),
+        clinicId,
         patientId,
         selectedTeeth,
         conditionData,
@@ -144,12 +141,11 @@ export default function PatientDentalChartPage() {
 
   // Handle multi-select procedure addition
   const handleAddProcedureToMultiple = async (selectedTeeth: Tooth[], procedureData: any) => {
-    const patientId = Array.isArray(params.patientId) ? params.patientId[0] : params.patientId;
-    if (!currentClinic?.id || !patientId) return;
+    if (!clinicId || !patientId) return;
 
     try {
       const result = await dentalChartMultiSelectService.addProcedureToMultipleTeethWithProgress(
-        currentClinic.id.toString(),
+        clinicId,
         patientId,
         selectedTeeth,
         procedureData,
@@ -197,19 +193,19 @@ export default function PatientDentalChartPage() {
     ...(dentalChart?.primary_teeth || [])
   ];
 
-  const patientId = Array.isArray(params.patientId) ? params.patientId[0] : params.patientId;
-
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href={`/${currentClinic?.id}/patients/${patientId}`}>
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Patient
-          </Button>
-        </Link>
-        <h1 className="text-2xl font-bold">Dental Chart</h1>
+        {backUrl && (
+          <Link href={backUrl}>
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+          </Link>
+        )}
+        <h1 className="text-2xl font-bold">{title}</h1>
       </div>
 
       {/* Success/Error Messages */}
@@ -314,22 +310,22 @@ export default function PatientDentalChartPage() {
               onAddCondition={handleAddCondition}
               onAddProcedure={handleAddProcedure}
               onUpdateCondition={async (conditionId, updateData) => {
-                // Implement update condition logic
                 console.log("Update condition:", conditionId, updateData);
+                // Implement update condition logic here
               }}
               onDeleteCondition={async (conditionId) => {
-                // Implement delete condition logic
                 console.log("Delete condition:", conditionId);
+                // Implement delete condition logic here
               }}
               onUpdateProcedure={async (procedureId, updateData) => {
-                // Implement update procedure logic
                 console.log("Update procedure:", procedureId, updateData);
+                // Implement update procedure logic here
               }}
               onDeleteProcedure={async (procedureId) => {
-                // Implement delete procedure logic
                 console.log("Delete procedure:", procedureId);
+                // Implement delete procedure logic here
               }}
-              clinicId={currentClinic?.id?.toString()}
+              clinicId={clinicId}
               patientId={patientId}
             />
           ) : (

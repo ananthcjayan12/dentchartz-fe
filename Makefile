@@ -16,6 +16,7 @@ help:
 	@echo "  make logs        - View container logs"
 	@echo "  make shell       - Access container shell"
 	@echo "  make deploy      - Build and run in production mode"
+	@echo "  make restart     - Stop, rebuild, and run in production mode"
 
 # Build the Docker image
 .PHONY: build
@@ -35,6 +36,8 @@ run:
 # Run container in production mode
 .PHONY: prod
 prod:
+	@echo "Checking if Docker image exists..."
+	@docker image inspect $(DOCKER_IMAGE) >/dev/null 2>&1 || { echo "Error: Docker image $(DOCKER_IMAGE) not found. Run 'make build' first."; exit 1; }
 	docker run -d \
 		-p $(PORT):$(PORT) \
 		--name $(CONTAINER_NAME) \
@@ -64,7 +67,13 @@ shell:
 
 # Build and run in production mode
 .PHONY: deploy
-deploy: build prod
+deploy: build
+	@echo "Image built successfully. Starting container..."
+	$(MAKE) prod
+
+# Restart: stop, build, and run
+.PHONY: restart
+restart: stop build prod
 
 # For Coolify deployment
 .PHONY: coolify-deploy

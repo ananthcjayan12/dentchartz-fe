@@ -33,7 +33,7 @@ import { DentalChartViewer } from "@/components/dental-chart/DentalChartViewer";
 import { ToothDetailPanel } from "@/components/dental-chart/ToothDetailPanel";
 import { Separator } from "@/components/ui/separator";
 
-export default function AppointmentDetailPage({ params }: { params: { id: string } }) {
+export default function AppointmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { currentClinic } = useAuth();
   const [appointment, setAppointment] = useState<Appointment | null>(null);
@@ -43,7 +43,7 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const appointmentId = params.id;
+  const [appointmentId, setAppointmentId] = useState<string>("");
 
   // Dental chart states
   const [dentalChart, setDentalChart] = useState<DentalChart | null>(null);
@@ -60,11 +60,16 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
         return;
       }
       
+      // Await params
+      const resolvedParams = await params;
+      const id = resolvedParams.id;
+      setAppointmentId(id);
+      
       setIsLoading(true);
       try {
         const appointmentData = await appointmentService.getAppointment(
           currentClinic.id.toString(),
-          appointmentId
+          id
         );
         
         setAppointment(appointmentData);

@@ -172,6 +172,22 @@ export function ToothDetailPanel({
   clinicId,
   patientId,
 }: ToothDetailPanelProps) {
+  // Early return if tooth is null or undefined
+  if (!tooth) {
+    return (
+      <div className="text-center py-6">
+        <p className="text-gray-500">No tooth selected</p>
+      </div>
+    );
+  }
+
+  // Ensure tooth has required properties with defaults
+  const safeToooth = {
+    ...tooth,
+    conditions: tooth.conditions || [],
+    procedures: tooth.procedures || []
+  };
+
   const [activeTab, setActiveTab] = useState("conditions");
   const [showAddConditionDialog, setShowAddConditionDialog] = useState(false);
   const [showAddProcedureDialog, setShowAddProcedureDialog] = useState(false);
@@ -274,7 +290,7 @@ export function ToothDetailPanel({
         surface: data.surface,
         notes: data.notes,
         severity: data.severity as 'mild' | 'moderate' | 'severe',
-        dentition_type: /^[A-Z]$/.test(tooth.number) ? 'primary' : 'permanent'
+        dentition_type: /^[A-Z]$/.test(safeToooth.number) ? 'primary' : 'permanent'
       });
     } else {
       // Handle standard condition
@@ -283,7 +299,7 @@ export function ToothDetailPanel({
         surface: data.surface,
         notes: data.notes,
         severity: data.severity as 'mild' | 'moderate' | 'severe',
-        dentition_type: /^[A-Z]$/.test(tooth.number) ? 'primary' : 'permanent'
+        dentition_type: /^[A-Z]$/.test(safeToooth.number) ? 'primary' : 'permanent'
       });
     }
     
@@ -408,17 +424,28 @@ export function ToothDetailPanel({
   }, [onUpdateProcedure, onDeleteProcedure]);
   
   return (
-    <div>
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full mb-4">
-          <TabsTrigger value="conditions" className="flex-1">Conditions</TabsTrigger>
-          <TabsTrigger value="procedures" className="flex-1">Procedures</TabsTrigger>
+    <div className="w-full max-w-md">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">
+          {safeToooth.name} (#{safeToooth.number})
+        </h2>
+        {onClose && (
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            ×
+          </Button>
+        )}
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="conditions">Conditions</TabsTrigger>
+          <TabsTrigger value="procedures">Procedures</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="conditions">
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium">Current Conditions</h3>
+              <h3 className="text-lg font-medium">Conditions</h3>
               <Dialog open={showAddConditionDialog} onOpenChange={setShowAddConditionDialog}>
                 <DialogTrigger asChild>
                   <Button size="sm" onClick={() => {
@@ -623,26 +650,26 @@ export function ToothDetailPanel({
               </Dialog>
             </div>
             
-            {tooth.conditions.length === 0 ? (
+            {!safeToooth.conditions || safeToooth.conditions.length === 0 ? (
               <div className="text-center py-6 border rounded-md bg-gray-50">
                 <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                 <p className="text-gray-500">No conditions recorded for this tooth</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {tooth.conditions.map((condition) => (
+                {(safeToooth.conditions || []).map((condition) => (
                   <Card key={condition.id}>
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="font-medium">{condition.condition_name}</h4>
-                          <p className="text-sm text-gray-500">
+                          <div className="text-sm text-gray-500">
                             Surface: <Badge variant="outline">{condition.surface}</Badge>
-                          </p>
+                          </div>
                           {condition.severity && (
-                            <p className="text-sm text-gray-500 mt-1">
+                            <div className="text-sm text-gray-500 mt-1">
                               Severity: <Badge variant="outline">{condition.severity}</Badge>
-                            </p>
+                            </div>
                           )}
                           {condition.notes && (
                             <p className="text-sm mt-2">{condition.notes}</p>
@@ -949,14 +976,14 @@ export function ToothDetailPanel({
               </Dialog>
             </div>
             
-            {tooth.procedures.length === 0 ? (
+            {!safeToooth.procedures || safeToooth.procedures.length === 0 ? (
               <div className="text-center py-6 border rounded-md bg-gray-50">
                 <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                 <p className="text-gray-500">No procedures recorded for this tooth</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {tooth.procedures.map((procedure) => (
+                {(safeToooth.procedures || []).map((procedure) => (
                   <Card key={procedure.id}>
                     <CardContent className="p-4">
                       <div>
