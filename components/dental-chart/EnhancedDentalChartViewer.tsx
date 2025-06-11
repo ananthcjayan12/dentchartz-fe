@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Tooth } from "@/services/dental-chart.service";
+import { Tooth, ToothCondition, ToothProcedure } from "@/services/dental-chart.service";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,10 @@ interface EnhancedDentalChartViewerProps {
   }[];
   onAddConditionToMultiple?: (teeth: Tooth[], conditionData: any) => void;
   onAddProcedureToMultiple?: (teeth: Tooth[], procedureData: any) => void;
+  onEditCondition?: (tooth: Tooth, condition: ToothCondition) => void;
+  onDeleteCondition?: (tooth: Tooth, condition: ToothCondition) => void;
+  onEditProcedure?: (tooth: Tooth, procedure: ToothProcedure) => void;
+  onDeleteProcedure?: (tooth: Tooth, procedure: ToothProcedure) => void;
 }
 
 export function EnhancedDentalChartViewer({ 
@@ -47,7 +51,11 @@ export function EnhancedDentalChartViewer({
   conditions = [],
   procedures = [],
   onAddConditionToMultiple,
-  onAddProcedureToMultiple
+  onAddProcedureToMultiple,
+  onEditCondition,
+  onDeleteCondition,
+  onEditProcedure,
+  onDeleteProcedure
 }: EnhancedDentalChartViewerProps) {
   const [isPediatric, setIsPediatric] = useState(showPrimary);
   const [selectedTeeth, setSelectedTeeth] = useState<Tooth[]>([]);
@@ -394,10 +402,16 @@ export function EnhancedDentalChartViewer({
         x={contextMenu.x}
         y={contextMenu.y}
         isVisible={contextMenu.isVisible}
-        onClose={() => setContextMenu(prev => ({ ...prev, isVisible: false }))}
+        onClose={() => {
+          setContextMenu(prev => ({ ...prev, isVisible: false }));
+        }}
         onAddCondition={() => setShowConditionDialog(true)}
         onAddProcedure={() => setShowProcedureDialog(true)}
-        selectedTeethCount={selectedTeeth.length}
+        selectedTeeth={selectedTeeth}
+        onEditCondition={onEditCondition}
+        onDeleteCondition={onDeleteCondition}
+        onEditProcedure={onEditProcedure}
+        onDeleteProcedure={onDeleteProcedure}
       />
 
       {/* Multi-Select Dialogs */}

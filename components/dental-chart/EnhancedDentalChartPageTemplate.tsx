@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { dentalChartService, DentalChart, DentalCondition, DentalProcedure, Tooth } from "@/services/dental-chart.service";
+import { dentalChartService, DentalChart, DentalCondition, DentalProcedure, Tooth, ToothCondition, ToothProcedure } from "@/services/dental-chart.service";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,12 +41,10 @@ export function EnhancedDentalChartPageTemplate({
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   useEffect(() => {
-    if (currentClinic?.id) {
-      loadDentalChart();
-      loadConditions();
-      loadProcedures();
-    }
-  }, [currentClinic?.id, patientId]);
+    loadDentalChart();
+    loadConditions();
+    loadProcedures();
+  }, [patientId, currentClinic?.id]);
 
   useEffect(() => {
     if (successMessage) {
@@ -61,6 +59,16 @@ export function EnhancedDentalChartPageTemplate({
       return () => clearTimeout(timer);
     }
   }, [errorMessage]);
+
+  // Debug logging for handlers
+  useEffect(() => {
+    console.log('Template - Handler types:', {
+      handleEditConditionFromChart: typeof handleEditConditionFromChart,
+      handleDeleteConditionFromChart: typeof handleDeleteConditionFromChart,
+      handleEditProcedureFromChart: typeof handleEditProcedureFromChart,
+      handleDeleteProcedureFromChart: typeof handleDeleteProcedureFromChart
+    });
+  }, []);
 
   const loadDentalChart = async () => {
     if (!currentClinic?.id) return;
@@ -262,6 +270,112 @@ export function EnhancedDentalChartPageTemplate({
     }
   };
 
+  const handleEditConditionFromChart = useCallback(async (tooth: Tooth, condition: ToothCondition) => {
+    console.log('handleEditConditionFromChart called:', { tooth: tooth.number, condition: condition.condition_name });
+    
+    if (!currentClinic?.id) {
+      console.log('No clinic ID available');
+      return;
+    }
+
+    // For now, we'll open the ToothDetailPanel with this tooth selected
+    // The actual editing will be handled through the ToothDetailPanel
+    console.log('Setting selected tooth to:', tooth);
+    handleToothSelect(tooth);
+    toast.info(`Select condition editing options in the tooth detail panel for tooth #${tooth.number}`);
+  }, [currentClinic?.id, handleToothSelect]);
+
+  const handleDeleteConditionFromChart = useCallback(async (tooth: Tooth, condition: ToothCondition) => {
+    console.log('handleDeleteConditionFromChart called:', { tooth: tooth.number, condition: condition.condition_name });
+    
+    if (!currentClinic?.id) {
+      console.log('No clinic ID available');
+      return;
+    }
+
+    const confirmResult = confirm(`Are you sure you want to delete the ${condition.condition_name} condition from tooth #${tooth.number}?`);
+    console.log('Confirmation result:', confirmResult);
+    
+    if (!confirmResult) {
+      return;
+    }
+
+    try {
+      console.log('Calling deleteToothCondition with:', {
+        clinicId: currentClinic.id.toString(),
+        patientId,
+        toothNumber: parseInt(tooth.number),
+        conditionId: condition.id
+      });
+      
+      await dentalChartService.deleteToothCondition(
+        currentClinic.id.toString(),
+        patientId,
+        parseInt(tooth.number),
+        condition.id
+      );
+      console.log('Delete condition successful');
+      toast.success("Condition deleted successfully");
+      await handleDataUpdate();
+    } catch (error) {
+      console.error("Error deleting condition:", error);
+      toast.error("Failed to delete condition");
+    }
+  }, [currentClinic?.id, patientId, handleDataUpdate]);
+
+  const handleEditProcedureFromChart = useCallback(async (tooth: Tooth, procedure: ToothProcedure) => {
+    console.log('handleEditProcedureFromChart called:', { tooth: tooth.number, procedure: procedure.procedure_name });
+    
+    if (!currentClinic?.id) {
+      console.log('No clinic ID available');
+      return;
+    }
+
+    // For now, we'll open the ToothDetailPanel with this tooth selected
+    // The actual editing will be handled through the ToothDetailPanel
+    console.log('Setting selected tooth to:', tooth);
+    handleToothSelect(tooth);
+    toast.info(`Select procedure editing options in the tooth detail panel for tooth #${tooth.number}`);
+  }, [currentClinic?.id, handleToothSelect]);
+
+  const handleDeleteProcedureFromChart = useCallback(async (tooth: Tooth, procedure: ToothProcedure) => {
+    console.log('handleDeleteProcedureFromChart called:', { tooth: tooth.number, procedure: procedure.procedure_name });
+    
+    if (!currentClinic?.id) {
+      console.log('No clinic ID available');
+      return;
+    }
+
+    const confirmResult = confirm(`Are you sure you want to delete the ${procedure.procedure_name} procedure from tooth #${tooth.number}?`);
+    console.log('Confirmation result:', confirmResult);
+    
+    if (!confirmResult) {
+      return;
+    }
+
+    try {
+      console.log('Calling deleteToothProcedure with:', {
+        clinicId: currentClinic.id.toString(),
+        patientId,
+        toothNumber: tooth.number.toString(),
+        procedureId: procedure.id
+      });
+      
+      await dentalChartService.deleteToothProcedure(
+        currentClinic.id.toString(),
+        patientId,
+        tooth.number.toString(),
+        procedure.id
+      );
+      console.log('Delete procedure successful');
+      toast.success("Procedure deleted successfully");
+      await handleDataUpdate();
+    } catch (error) {
+      console.error("Error deleting procedure:", error);
+      toast.error("Failed to delete procedure");
+    }
+  }, [currentClinic?.id, patientId, handleDataUpdate]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -275,6 +389,14 @@ export function EnhancedDentalChartPageTemplate({
 
   const currentTeeth = dentalChart?.permanent_teeth || [];
   const primaryTeeth = dentalChart?.primary_teeth || [];
+
+  // Debug: Check if handlers are defined on each render
+  console.log('Template render - Handler check:', {
+    handleEditConditionFromChart: typeof handleEditConditionFromChart,
+    handleDeleteConditionFromChart: typeof handleDeleteConditionFromChart,
+    handleEditProcedureFromChart: typeof handleEditProcedureFromChart,
+    handleDeleteProcedureFromChart: typeof handleDeleteProcedureFromChart
+  });
 
   return (
     <div className="space-y-6">
@@ -375,6 +497,10 @@ export function EnhancedDentalChartPageTemplate({
                     onAddProcedureToMultiple={handleAddProcedureToMultiple}
                     onGeneralProcedureClick={() => setShowGeneralProcedures(true)}
                     onSelectedTeethChange={handleSelectedTeethChange}
+                    onEditCondition={handleEditConditionFromChart}
+                    onDeleteCondition={handleDeleteConditionFromChart}
+                    onEditProcedure={handleEditProcedureFromChart}
+                    onDeleteProcedure={handleDeleteProcedureFromChart}
                   />
                 </CardContent>
               </Card>
