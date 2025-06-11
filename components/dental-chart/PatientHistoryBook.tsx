@@ -256,6 +256,30 @@ export function PatientHistoryBook({ patientId, patientName, toothNumber, select
     createTimeline(filtered);
   };
 
+  const filterEntriesBySelectedTeeth = (entries: (ChartHistoryEntry & { isBulkOperation?: boolean; bulkTeeth?: string[]; user_name?: string })[]): (ChartHistoryEntry & { isBulkOperation?: boolean; bulkTeeth?: string[]; user_name?: string })[] => {
+    if (!selectedTeethNumbers || selectedTeethNumbers.length === 0) {
+      return entries;
+    }
+
+    const filtered = entries.filter(entry => {
+      // Check if this is a bulk operation
+      if (entry.isBulkOperation === true && entry.bulkTeeth && entry.bulkTeeth.length > 0) {
+        // For bulk operations, check if any of the selected teeth are in the bulkTeeth array
+        return entry.bulkTeeth.some(toothNum => 
+          selectedTeethNumbers.includes(toothNum)
+        );
+      } else {
+        // For individual operations, check the tooth_number
+        if (!entry.tooth_number) {
+          return false; // Skip entries without tooth numbers
+        }
+        return selectedTeethNumbers.includes(entry.tooth_number.toString());
+      }
+    });
+
+    return filtered;
+  };
+
   const createTimeline = (entries: ChartHistoryEntry[]) => {
     const grouped: { [key: string]: ChartHistoryEntry[] } = {};
     
@@ -278,26 +302,7 @@ export function PatientHistoryBook({ patientId, patientName, toothNumber, select
         let groupedEntries = groupBulkOperations(dayEntries);
         
         // Apply teeth filtering AFTER bulk operations are grouped
-        // This ensures that:
-        // 1. Individual operations are filtered by their tooth_number
-        // 2. Bulk operations are filtered by checking if ANY of the bulkTeeth match selected teeth
-        // 3. Bulk operations remain intact and don't get broken up during filtering
-        if (selectedTeethNumbers && selectedTeethNumbers.length > 0) {
-          groupedEntries = groupedEntries.filter(entry => {
-            const typedEntry = entry as ChartHistoryEntry & { isBulkOperation?: boolean; bulkTeeth?: string[] };
-            
-            // Check if this is a bulk operation
-            if (typedEntry.isBulkOperation && typedEntry.bulkTeeth) {
-              // For bulk operations, check if any of the selected teeth are in the bulkTeeth array
-              return typedEntry.bulkTeeth.some(toothNum => 
-                selectedTeethNumbers.includes(toothNum)
-              );
-            } else {
-              // For individual operations, check the tooth_number
-              return entry.tooth_number && selectedTeethNumbers.includes(entry.tooth_number.toString());
-            }
-          });
-        }
+        groupedEntries = filterEntriesBySelectedTeeth(groupedEntries);
         
         return {
           date,
@@ -357,7 +362,14 @@ export function PatientHistoryBook({ patientId, patientName, toothNumber, select
         };
         ungrouped.push(bulkEntry);
       } else {
-        ungrouped.push(group[0]);
+        // Individual entry - explicitly mark as not bulk operation
+        const individualEntry = group[0];
+        const markedEntry: ChartHistoryEntry & { isBulkOperation?: boolean; bulkTeeth?: string[]; user_name?: string } = {
+          ...individualEntry,
+          isBulkOperation: false,
+          user_name: (individualEntry as any).user_name || individualEntry.user
+        };
+        ungrouped.push(markedEntry);
       }
     });
 
@@ -535,17 +547,31 @@ export function PatientHistoryBook({ patientId, patientName, toothNumber, select
       {selectedTeethNumbers && selectedTeethNumbers.length > 0 && (
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium text-gray-600">Viewing history for:</span>
-              {selectedTeethNumbers.map(toothNum => (
-                <Badge key={toothNum} className="bg-blue-100 text-blue-700 border-blue-200">
-                  Tooth #{toothNum}
-                </Badge>
-              ))}
-              <span className="text-xs text-gray-500 ml-2">
-                ({selectedTeethNumbers.length} {selectedTeethNumbers.length === 1 ? 'tooth' : 'teeth'} selected)
-              </span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-medium text-gray-600">Filtering by:</span>
+                {selectedTeethNumbers.map(toothNum => (
+                  <Badge key={toothNum} className="bg-blue-100 text-blue-700 border-blue-200">
+                    Tooth #{toothNum}
+                  </Badge>
+                ))}
+                <span className="text-xs text-gray-500 ml-2">
+                  ({selectedTeethNumbers.length} {selectedTeethNumbers.length === 1 ? 'tooth' : 'teeth'} selected)
+                </span>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => window.location.reload()} // This will clear the selection
+                className="text-xs"
+              >
+                Clear Selection
+              </Button>
             </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Only showing history records that involve the selected {selectedTeethNumbers.length === 1 ? 'tooth' : 'teeth'}. 
+              Select different teeth in the dental chart above to change the filter.
+            </p>
           </CardContent>
         </Card>
       )}
@@ -713,7 +739,22 @@ export function PatientHistoryBook({ patientId, patientName, toothNumber, select
           <Card>
             <CardContent className="p-8 text-center">
               <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No history records found</p>
+              {selectedTeethNumbers && selectedTeethNumbers.length > 0 ? (
+                <div>
+                  <p className="text-gray-500 mb-2">No history records found</p>
+                  <p className="text-sm text-gray-400">
+                    No conditions or procedures have been recorded for {selectedTeethNumbers.length === 1 
+                      ? `tooth #${selectedTeethNumbers[0]}` 
+                      : `the selected teeth: ${selectedTeethNumbers.map(n => `#${n}`).join(', ')}`
+                    }
+                  </p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Try selecting different teeth or clear the selection to view all records
+                  </p>
+                </div>
+              ) : (
+                <p className="text-gray-500">No history records found</p>
+              )}
             </CardContent>
           </Card>
         ) : (
