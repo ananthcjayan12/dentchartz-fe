@@ -17,6 +17,7 @@ interface EnhancedDentalChartViewerProps {
   selectedTooth: Tooth | null;
   showPrimary?: boolean;
   onGeneralProcedureClick?: () => void;
+  onSelectedTeethChange?: (teeth: Tooth[]) => void;
   conditions?: {
     id: number;
     name: string;
@@ -42,6 +43,7 @@ export function EnhancedDentalChartViewer({
   selectedTooth,
   showPrimary = false,
   onGeneralProcedureClick,
+  onSelectedTeethChange,
   conditions = [],
   procedures = [],
   onAddConditionToMultiple,
@@ -208,6 +210,13 @@ export function EnhancedDentalChartViewer({
   const clearSelection = () => {
     setSelectedTeeth([]);
   };
+
+  // Notify parent component when selected teeth change
+  useEffect(() => {
+    if (onSelectedTeethChange) {
+      onSelectedTeethChange(selectedTeeth);
+    }
+  }, [selectedTeeth, onSelectedTeethChange]);
 
   const handleToggleDentition = () => {
     setIsPediatric(!isPediatric);

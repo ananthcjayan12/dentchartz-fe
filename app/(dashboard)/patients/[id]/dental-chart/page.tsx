@@ -21,6 +21,7 @@ import { CondensedChartHistory } from "@/components/dental-chart/CondensedChartH
 import { ProceduresSummary } from "@/components/dental-chart/ProceduresSummary";
 import { GeneralProcedureDialog } from "@/components/dental-chart/GeneralProcedureDialog";
 import { GeneralProceduresPanel } from "@/components/dental-chart/GeneralProceduresPanel";
+import { PatientHistoryBook } from "@/components/dental-chart/PatientHistoryBook";
 
 export default function PatientDentalChartPage() {
   const router = useRouter();
@@ -32,6 +33,7 @@ export default function PatientDentalChartPage() {
   const [conditions, setConditions] = useState<DentalCondition[]>([]);
   const [procedures, setProcedures] = useState<DentalProcedure[]>([]);
   const [selectedTooth, setSelectedTooth] = useState<Tooth | null>(null);
+  const [selectedTeeth, setSelectedTeeth] = useState<Tooth[]>([]);
   const [activeTab, setActiveTab] = useState("chart");
   const [isLoading, setIsLoading] = useState(true);
   const [patientName, setPatientName] = useState("");
@@ -400,6 +402,7 @@ export default function PatientDentalChartPage() {
                       teeth={[...(dentalChart.permanent_teeth || []), ...(dentalChart.primary_teeth || [])]} 
                       onToothSelect={handleToothSelect} 
                       selectedTooth={selectedTooth}
+                      onSelectedTeethChange={setSelectedTeeth}
                       conditions={conditions}
                       procedures={procedures}
                       onGeneralProcedureClick={handleGeneralProcedureClick}
@@ -459,7 +462,11 @@ export default function PatientDentalChartPage() {
                   </CardContent>
                   <div className="px-6 pb-6">
                     <Separator className="my-4" />
-                    <CondensedChartHistory patientId={patientId as string} />
+                    <PatientHistoryBook 
+                      patientId={patientId as string} 
+                      patientName={patientName}
+                      selectedTeethNumbers={selectedTeeth.map(tooth => tooth.number.toString())}
+                    />
                   </div>
                 </Card>
               </div>
@@ -538,10 +545,14 @@ export default function PatientDentalChartPage() {
         <TabsContent value="history">
           <Card>
             <CardHeader>
-              <CardTitle>Chart History</CardTitle>
+              <CardTitle>Complete Patient History</CardTitle>
+              <p className="text-gray-600">View all dental records and treatment history for this patient</p>
             </CardHeader>
             <CardContent>
-              <ChartHistoryViewer patientId={patientId as string} />
+              <PatientHistoryBook 
+                patientId={patientId as string} 
+                patientName={patientName}
+              />
             </CardContent>
           </Card>
         </TabsContent>
