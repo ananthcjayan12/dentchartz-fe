@@ -488,7 +488,7 @@ export function AppointmentForm({ appointment, onSuccess, preSelectedPatientId }
                             selected={field.value}
                             onSelect={handleDateChange}
                             disabled={(date) =>
-                              date < new Date() || date > new Date(new Date().setMonth(new Date().getMonth() + 3))
+                              date > new Date(new Date().setMonth(new Date().getMonth() + 3))
                             }
                             initialFocus
                           />
