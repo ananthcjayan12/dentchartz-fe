@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { 
   Calendar, 
@@ -33,7 +34,9 @@ import {
   CalendarDays,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Trash2,
+  MoreHorizontal
 } from "lucide-react";
 
 interface PatientHistoryBookProps {
@@ -543,6 +546,113 @@ export function PatientHistoryBook({ patientId, patientName, toothNumber, select
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
   };
 
+  const handleDeleteEntry = async (entry: ChartHistoryEntry & { isBulkOperation?: boolean; bulkTeeth?: string[] }) => {
+    if (!currentClinic?.id) return;
+    
+    const entryType = entry.action.includes('condition') ? 'condition' : 'procedure';
+    const isMultipleTeeth = entry.isBulkOperation && entry.bulkTeeth && entry.bulkTeeth.length > 1;
+    
+    const confirmMessage = isMultipleTeeth 
+      ? `Are you sure you want to delete this ${entryType} from ${entry.bulkTeeth?.length} teeth? This will remove the ${entryType} from all affected teeth.`
+      : `Are you sure you want to delete this ${entryType} from tooth #${entry.tooth_number}?`;
+    
+    if (!confirm(confirmMessage)) return;
+
+    try {
+      // Get current dental chart data
+      const toothData = await dentalChartService.getPatientDentalChart(
+        currentClinic.id.toString(),
+        patientId
+      );
+      
+      const allTeeth = [...toothData.permanent_teeth, ...toothData.primary_teeth];
+      
+      // Handle bulk operations
+      const teethToProcess = isMultipleTeeth ? entry.bulkTeeth! : [entry.tooth_number?.toString()!];
+      let successCount = 0;
+      let failureCount = 0;
+      
+      for (const toothNumber of teethToProcess) {
+        try {
+          const tooth = allTeeth.find((t: any) => t.number === toothNumber);
+          
+          if (entry.action === 'add_condition' && entry.details?.condition_name) {
+            const condition = tooth?.conditions.find((c: any) => 
+              c.condition_name === entry.details?.condition_name &&
+              c.surface === entry.details?.surface
+            );
+            
+            if (condition) {
+              await dentalChartService.deleteToothCondition(
+                currentClinic.id.toString(),
+                patientId,
+                parseInt(toothNumber),
+                condition.id
+              );
+              successCount++;
+            } else {
+              failureCount++;
+            }
+          } else if (entry.action === 'add_procedure' && entry.details?.procedure_name) {
+            const procedure = tooth?.procedures.find((p: any) => 
+              p.procedure_name === entry.details?.procedure_name &&
+              p.surface === entry.details?.surface
+            );
+            
+            if (procedure) {
+              await dentalChartService.deleteToothProcedure(
+                currentClinic.id.toString(),
+                patientId,
+                toothNumber,
+                procedure.id
+              );
+              successCount++;
+            } else {
+              failureCount++;
+            }
+          }
+        } catch (error) {
+          console.error(`Error deleting ${entryType} from tooth ${toothNumber}:`, error);
+          failureCount++;
+        }
+      }
+      
+      // Show appropriate success/error messages
+      if (successCount > 0) {
+        const message = isMultipleTeeth 
+          ? `Successfully deleted ${entryType} from ${successCount} ${successCount === 1 ? 'tooth' : 'teeth'}`
+          : `${entryType.charAt(0).toUpperCase() + entryType.slice(1)} deleted successfully`;
+        toast.success(message);
+      }
+      
+      if (failureCount > 0) {
+        const message = isMultipleTeeth 
+          ? `Failed to delete ${entryType} from ${failureCount} ${failureCount === 1 ? 'tooth' : 'teeth'}`
+          : `Could not find ${entryType} to delete`;
+        toast.error(message);
+      }
+      
+      if (successCount === 0 && failureCount === 0) {
+        toast.error(`No ${entryType} found to delete`);
+      }
+      
+      // Refresh the history if any deletions were successful
+      if (successCount > 0) {
+        fetchHistory(1);
+      }
+      
+    } catch (error) {
+      console.error("Error deleting entry:", error);
+      toast.error(`Failed to delete ${entryType}`);
+    }
+  };
+
+  const handleEditEntry = async (entry: ChartHistoryEntry) => {
+    // For now, we'll show a message directing users to the tooth detail panel
+    // In a full implementation, we could open edit dialogs here
+    toast.info(`To edit this ${entry.action.includes('condition') ? 'condition' : 'procedure'}, please use the tooth detail panel for tooth #${entry.tooth_number}`);
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -889,11 +999,38 @@ export function PatientHistoryBook({ patientId, patientName, toothNumber, select
                             
                             <div className="flex-1 pb-4">
                               <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                                {/* Narrative Description */}
-                                <div className="mb-3">
-                                  <p className="text-gray-800 leading-relaxed">
-                                    {narrative}
-                                  </p>
+                                {/* Header with Actions */}
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex-1">
+                                    {/* Narrative Description */}
+                                    <p className="text-gray-800 leading-relaxed">
+                                      {narrative}
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Action Buttons - Only show for add_condition and add_procedure entries */}
+                                  {(entry.action === 'add_condition' || entry.action === 'add_procedure') && (
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="More actions">
+                                          <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => handleEditEntry(entry)}>
+                                          <Edit className="h-4 w-4 mr-2" />
+                                          Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem 
+                                          onClick={() => handleDeleteEntry(entry)}
+                                          className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                        >
+                                          <Trash2 className="h-4 w-4 mr-2" />
+                                          Delete
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  )}
                                 </div>
 
                                 {/* Bulk Operation Indicator */}
