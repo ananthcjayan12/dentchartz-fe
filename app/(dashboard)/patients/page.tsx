@@ -78,20 +78,20 @@ function PatientsContent() {
   const totalPages = Math.ceil(totalPatients / limit);
   
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <div className="bg-gradient-to-r from-purple-500 to-indigo-500 p-6 rounded-lg text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold text-gray-900">Patients</h1>
-          <p className="text-gray-500 mt-1">Manage your patient records</p>
+          <h1 className="text-3xl font-semibold">Patients</h1>
+          <p className="mt-1 text-white/80">Manage your patient records</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white">
             <Link href="/patients/import">
               <Upload className="mr-2 h-4 w-4" />
               Import CSV
             </Link>
           </Button>
-          <Button asChild>
+          <Button asChild className="bg-white text-indigo-600 hover:bg-indigo-50">
             <Link href="/patients/new">
               <Plus className="mr-2 h-4 w-4" />
               Add New Patient
@@ -124,49 +124,70 @@ function PatientsContent() {
             </div>
           ) : patients.length > 0 ? (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Age</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {patients.map((patient) => (
-                    <TableRow key={patient.id}>
-                      <TableCell className="font-medium">
-                        {patient.name || `Patient #${patient.id}`}
-                      </TableCell>
-                      <TableCell>
-                        {patient.phone && (
-                          <div>{patient.phone}</div>
-                        )}
-                        {patient.email && (
-                          <div className="text-gray-500 text-sm">{patient.email}</div>
-                        )}
-                      </TableCell>
-                      <TableCell>{patient.age ? `${patient.age} years` : 'N/A'}</TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm" asChild>
-                            <Link href={`/patients/${patient.id}`}>
-                              View
-                            </Link>
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Age</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {patients.map((patient) => (
+                      <TableRow key={patient.id}>
+                        <TableCell className="font-medium">
+                          {patient.name || `Patient #${patient.id}`}
+                        </TableCell>
+                        <TableCell>
+                          {patient.phone && <div>{patient.phone}</div>}
+                          {patient.email && (
+                            <div className="text-gray-500 text-sm">{patient.email}</div>
+                          )}
+                        </TableCell>
+                        <TableCell>{patient.age ? `${patient.age} years` : 'N/A'}</TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button variant="outline" size="sm" asChild>
+                              <Link href={`/patients/${patient.id}`}>View</Link>
+                            </Button>
+                            <Button variant="outline" size="sm" asChild>
+                              <Link href={`/appointments/new?patientId=${patient.id}`}>Schedule</Link>
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {/* Mobile card list view */}
+              <div className="md:hidden grid gap-4">
+                {patients.map((patient) => (
+                  <Card key={patient.id} className="shadow rounded-lg">
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="text-lg font-medium">{patient.name}</h3>
+                          {patient.phone && <p className="text-sm text-gray-600">{patient.phone}</p>}
+                          {patient.email && <p className="text-sm text-gray-600">{patient.email}</p>}
+                          <p className="text-sm text-gray-600">{patient.age ? `${patient.age} years` : 'N/A'}</p>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Button asChild size="sm" className="bg-indigo-600 text-white">
+                            <Link href={`/patients/${patient.id}`}>View</Link>
                           </Button>
-                          <Button variant="outline" size="sm" asChild>
-                            <Link href={`/appointments/new?patientId=${patient.id}`}>
-                              Schedule
-                            </Link>
+                          <Button asChild size="sm" className="bg-green-600 text-white">
+                            <Link href={`/appointments/new?patientId=${patient.id}`}>Schedule</Link>
                           </Button>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="mt-6 flex justify-center">
                   <Pagination

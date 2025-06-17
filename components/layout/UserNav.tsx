@@ -53,11 +53,11 @@ export function UserNav() {
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
+      <DropdownMenuContent className="w-56 bg-card border border-border" align="end" forceMount>
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{displayName}</p>
-            <p className="text-xs leading-none text-gray-500">{user?.email || user?.username || ""}</p>
+            <p className="text-sm font-medium text-foreground leading-none">{displayName}</p>
+            <p className="text-xs leading-none text-muted-foreground">{user?.email || user?.username || ""}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -66,8 +66,8 @@ export function UserNav() {
         {clinics && clinics.length > 0 && (
           
           <>
-            <DropdownMenuLabel className="flex items-center">
-              <Building2 className="mr-2 h-4 w-4 text-gray-500" />
+            <DropdownMenuLabel className="flex items-center text-foreground">
+              <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
               <span className="text-xs font-medium">Current Clinic</span>
             </DropdownMenuLabel>
             <DropdownMenuRadioGroup 
@@ -86,30 +86,30 @@ export function UserNav() {
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="border-border" />
           </>
         )}
         
         <DropdownMenuGroup>
-          <DropdownMenuItem asChild>
+          <DropdownMenuItem asChild className="text-foreground hover:bg-muted">
             <Link href="/profile" className="cursor-pointer flex w-full">
-              <User className="mr-2 h-4 w-4" />
+              <User className="mr-2 h-4 w-4 text-muted-foreground" />
               <span>Profile</span>
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
+          <DropdownMenuItem asChild className="text-foreground hover:bg-muted">
             <Link href="/settings" className="cursor-pointer flex w-full">
-              <Settings className="mr-2 h-4 w-4" />
+              <Settings className="mr-2 h-4 w-4 text-muted-foreground" />
               <span>Settings</span>
             </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="border-border" />
         <DropdownMenuItem 
-          className="cursor-pointer"
+          className="cursor-pointer text-foreground hover:bg-muted"
           onClick={handleLogout}
         >
-          <LogOut className="mr-2 h-4 w-4" />
+          <LogOut className="mr-2 h-4 w-4 text-muted-foreground" />
           <span>Log out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>

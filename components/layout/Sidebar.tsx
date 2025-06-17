@@ -81,7 +81,7 @@ export function Sidebar({ userRole = "staff" }: { userRole?: string }) {
       {/* Mobile sidebar backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/20 lg:hidden"
           onClick={toggleSidebar}
         />
       )}
@@ -99,14 +99,14 @@ export function Sidebar({ userRole = "staff" }: { userRole?: string }) {
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out transform lg:translate-x-0 lg:static lg:z-0",
+          "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transition-transform duration-300 ease-in-out transform lg:translate-x-0 lg:static lg:z-0",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="h-16 flex items-center justify-center border-b border-gray-200">
-            <Link href="/" className="text-xl font-bold text-indigo-600">
+          <div className="h-16 flex items-center justify-center border-b border-border">
+            <Link href="/" className="text-xl font-bold text-primary">
               DentChartzz
             </Link>
           </div>
@@ -120,8 +120,8 @@ export function Sidebar({ userRole = "staff" }: { userRole?: string }) {
                 className={cn(
                   "flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors",
                   pathname === item.href || pathname.startsWith(`${item.href}/`)
-                    ? "bg-indigo-50 text-indigo-600"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground hover:bg-muted"
                 )}
               >
                 {item.icon}
