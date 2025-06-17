@@ -284,7 +284,16 @@ export function PatientHistoryBook({ patientId, patientName, toothNumber, select
     const grouped: { [key: string]: ChartHistoryEntry[] } = {};
     
     entries.forEach(entry => {
-      const dateKey = format(parseISO(entry.date), 'yyyy-MM-dd');
+      // Use the actual date from details (date_detected or date_performed) if available
+      let relevantDate = entry.date; // fallback to creation date
+      
+      if (entry.details?.date_detected) {
+        relevantDate = entry.details.date_detected;
+      } else if (entry.details?.date_performed) {
+        relevantDate = entry.details.date_performed;
+      }
+      
+      const dateKey = format(parseISO(relevantDate), 'yyyy-MM-dd');
       if (!grouped[dateKey]) {
         grouped[dateKey] = [];
       }
@@ -307,9 +316,19 @@ export function PatientHistoryBook({ patientId, patientName, toothNumber, select
         return {
           date,
           entries: groupedEntries.sort((a, b) => {
-            const dateA = new Date(a.date).getTime();
-            const dateB = new Date(b.date).getTime();
-            return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+            // Use relevant dates for sorting within the day
+            let dateA = a.date;
+            let dateB = b.date;
+            
+            if (a.details?.date_detected) dateA = a.details.date_detected;
+            else if (a.details?.date_performed) dateA = a.details.date_performed;
+            
+            if (b.details?.date_detected) dateB = b.details.date_detected;
+            else if (b.details?.date_performed) dateB = b.details.date_performed;
+            
+            const timeA = new Date(dateA).getTime();
+            const timeB = new Date(dateB).getTime();
+            return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
           }),
           dayStats: {
             conditions: dayEntries.filter(e => e.action.includes('condition')).length,
@@ -336,8 +355,16 @@ export function PatientHistoryBook({ patientId, patientName, toothNumber, select
     const ungrouped: ChartHistoryEntry[] = [];
 
     entries.forEach(entry => {
+      // Use the actual date from details (date_detected or date_performed) if available
+      let relevantDate = entry.date;
+      if (entry.details?.date_detected) {
+        relevantDate = entry.details.date_detected;
+      } else if (entry.details?.date_performed) {
+        relevantDate = entry.details.date_performed;
+      }
+      
       // Create a grouping key based on action, condition/procedure name, and time (within same minute)
-      const timeKey = format(parseISO(entry.date), 'yyyy-MM-dd HH:mm');
+      const timeKey = format(parseISO(relevantDate), 'yyyy-MM-dd HH:mm');
       const actionKey = entry.action;
       const nameKey = entry.details?.condition_name || entry.details?.procedure_name || '';
       const groupKey = `${timeKey}_${actionKey}_${nameKey}`;
@@ -386,7 +413,14 @@ export function PatientHistoryBook({ patientId, patientName, toothNumber, select
       ? `teeth ${bulkTeeth.map(t => `#${t}`).join(', ')}`
       : `tooth #${tooth_number}`;
     
-    const timeText = format(parseISO(entry.date), 'h:mm a');
+    // Use the actual date from details for time display
+    let relevantDate = entry.date;
+    if (entry.details?.date_detected) {
+      relevantDate = entry.details.date_detected;
+    } else if (entry.details?.date_performed) {
+      relevantDate = entry.details.date_performed;
+    }
+    const timeText = format(parseISO(relevantDate), 'h:mm a');
     const conditionName = details?.condition_name || '';
     const procedureName = details?.procedure_name || '';
     const surface = details?.surface ? ` on the ${details.surface} surface` : '';
@@ -453,6 +487,21 @@ export function PatientHistoryBook({ patientId, patientName, toothNumber, select
       sections.push({
         title: 'Details',
         content: technicalDetails.join(' • ')
+      });
+    }
+
+    // Date information
+    if (details.date_detected) {
+      sections.push({
+        title: 'Date Detected',
+        content: format(parseISO(details.date_detected), 'MMMM d, yyyy')
+      });
+    }
+    
+    if (details.date_performed) {
+      sections.push({
+        title: 'Date Performed',
+        content: format(parseISO(details.date_performed), 'MMMM d, yyyy')
       });
     }
     

@@ -109,6 +109,7 @@ export interface AddToothConditionData {
   surface: string;
   notes?: string;
   severity?: 'mild' | 'moderate' | 'severe';
+  date_detected?: string;
   dentition_type: 'permanent' | 'primary';
 }
 

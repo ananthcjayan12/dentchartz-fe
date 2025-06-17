@@ -7,6 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 import { Tooth } from "@/services/dental-chart.service";
 
 interface MultiSelectConditionDialogProps {
@@ -17,6 +21,7 @@ interface MultiSelectConditionDialogProps {
     surface: string;
     notes?: string;
     severity?: string;
+    date_detected?: string;
   }) => void;
   selectedTeeth: Tooth[];
   conditions: {
@@ -39,6 +44,7 @@ export function MultiSelectConditionDialog({
   const [surface, setSurface] = useState("all");
   const [severity, setSeverity] = useState("moderate");
   const [notes, setNotes] = useState("");
+  const [date, setDate] = useState<Date>(new Date());
 
   const handleSubmit = () => {
     if (!selectedCondition) return;
@@ -47,7 +53,8 @@ export function MultiSelectConditionDialog({
       condition_id: parseInt(selectedCondition),
       surface,
       notes: notes || undefined,
-      severity
+      severity,
+      date_detected: format(date, "yyyy-MM-dd")
     });
 
     // Reset form
@@ -55,6 +62,7 @@ export function MultiSelectConditionDialog({
     setSurface("all");
     setSeverity("moderate");
     setNotes("");
+    setDate(new Date());
     onClose();
   };
 
@@ -64,6 +72,7 @@ export function MultiSelectConditionDialog({
     setSurface("all");
     setSeverity("moderate");
     setNotes("");
+    setDate(new Date());
     onClose();
   };
 
@@ -143,6 +152,30 @@ export function MultiSelectConditionDialog({
                 <SelectItem value="severe">Severe</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Date Selection */}
+          <div className="space-y-2">
+            <Label>Date Detected</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={(date) => date && setDate(date)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Notes */}

@@ -76,6 +76,7 @@ interface ToothDetailPanelProps {
     surface: string;
     notes?: string;
     severity?: string;
+    date_detected?: string;
     dentition_type?: 'permanent' | 'primary';
   }) => void;
   onAddProcedure: (data: {
@@ -126,6 +127,7 @@ const conditionFormSchema = z.object({
   surface: z.string().min(1, "Please select at least one surface"),
   notes: z.string().optional(),
   severity: z.string().optional(),
+  date_detected: z.date().optional(),
 });
 
 const procedureFormSchema = z.object({
@@ -238,6 +240,7 @@ export function ToothDetailPanel({
       surface: "",
       notes: "",
       severity: "moderate",
+      date_detected: new Date(),
     },
   });
   
@@ -290,6 +293,7 @@ export function ToothDetailPanel({
         surface: data.surface,
         notes: data.notes,
         severity: data.severity as 'mild' | 'moderate' | 'severe',
+        date_detected: data.date_detected ? format(data.date_detected, "yyyy-MM-dd") : undefined,
         dentition_type: /^[A-Z]$/.test(safeToooth.number) ? 'primary' : 'permanent'
       });
     } else {
@@ -299,6 +303,7 @@ export function ToothDetailPanel({
         surface: data.surface,
         notes: data.notes,
         severity: data.severity as 'mild' | 'moderate' | 'severe',
+        date_detected: data.date_detected ? format(data.date_detected, "yyyy-MM-dd") : undefined,
         dentition_type: /^[A-Z]$/.test(safeToooth.number) ? 'primary' : 'permanent'
       });
     }
@@ -454,6 +459,7 @@ export function ToothDetailPanel({
                       surface: "",
                       notes: "",
                       severity: "moderate",
+                      date_detected: new Date(),
                     });
                   }}>
                     <Plus className="h-4 w-4 mr-1" />
@@ -619,6 +625,48 @@ export function ToothDetailPanel({
                                 <SelectItem value="severe">Severe</SelectItem>
                               </SelectContent>
                             </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={conditionForm.control}
+                        name="date_detected"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <FormLabel>Date Detected</FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                      "w-full pl-3 text-left font-normal",
+                                      !field.value && "text-muted-foreground"
+                                    )}
+                                  >
+                                    {field.value ? (
+                                      format(field.value, "PPP")
+                                    ) : (
+                                      <span>Pick a date</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <UICalendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  disabled={(date) =>
+                                    date > new Date() || date < new Date("1900-01-01")
+                                  }
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
                             <FormMessage />
                           </FormItem>
                         )}

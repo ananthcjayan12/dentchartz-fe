@@ -401,7 +401,7 @@ export default function PatientDentalChartPage() {
                     <EnhancedDentalChartViewer 
                       teeth={[...(dentalChart.permanent_teeth || []), ...(dentalChart.primary_teeth || [])]} 
                       onToothSelect={handleToothSelect} 
-                      selectedTooth={selectedTooth}
+                selectedTooth={selectedTooth}
                       onSelectedTeethChange={setSelectedTeeth}
                       conditions={conditions}
                       procedures={procedures}

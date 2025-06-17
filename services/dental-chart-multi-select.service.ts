@@ -5,6 +5,7 @@ export interface MultiSelectConditionData {
   surface: string;
   notes?: string;
   severity?: 'mild' | 'moderate' | 'severe';
+  date_detected?: string;
 }
 
 export interface MultiSelectProcedureData {
@@ -36,6 +37,7 @@ export const dentalChartMultiSelectService = {
           surface: conditionData.surface,
           notes: conditionData.notes,
           severity: conditionData.severity,
+          date_detected: conditionData.date_detected,
           dentition_type: tooth.dentition_type
         };
 
@@ -120,6 +122,7 @@ export const dentalChartMultiSelectService = {
           surface: conditionData.surface,
           notes: conditionData.notes,
           severity: conditionData.severity,
+          date_detected: conditionData.date_detected,
           dentition_type: tooth.dentition_type
         };
 

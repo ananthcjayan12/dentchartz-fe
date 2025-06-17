@@ -25,19 +25,19 @@ export default function PatientDentalChartPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   
-  const fetchDentalChart = async () => {
+    const fetchDentalChart = async () => {
     const patientId = Array.isArray(params.patientId) ? params.patientId[0] : params.patientId;
     if (!currentClinic?.id || !patientId) return;
-    
-    setIsLoading(true);
-    try {
+      
+      setIsLoading(true);
+      try {
       // Fetch dental chart
-      const data = await dentalChartService.getPatientDentalChart(
-        currentClinic.id.toString(),
+        const data = await dentalChartService.getPatientDentalChart(
+          currentClinic.id.toString(),
         patientId
-      );
-      console.log("Fetched dental chart:", data);
-      setDentalChart(data);
+        );
+        console.log("Fetched dental chart:", data);
+        setDentalChart(data);
 
       // Fetch conditions and procedures
       const conditionsData = await dentalChartService.getDentalConditions(
@@ -49,14 +49,14 @@ export default function PatientDentalChartPage() {
         currentClinic.id.toString()
       );
       setProcedures(proceduresData.results);
-    } catch (error) {
-      console.error("Error fetching dental chart:", error);
+      } catch (error) {
+        console.error("Error fetching dental chart:", error);
       setErrorMessage("Failed to load dental chart");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
   useEffect(() => {
     fetchDentalChart();
   }, [currentClinic?.id, params.patientId]);
@@ -198,7 +198,7 @@ export default function PatientDentalChartPage() {
   ];
 
   const patientId = Array.isArray(params.patientId) ? params.patientId[0] : params.patientId;
-
+  
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
@@ -247,8 +247,8 @@ export default function PatientDentalChartPage() {
             <CardContent>
               <EnhancedDentalChartViewer
                 teeth={allTeeth}
-                onToothSelect={handleToothSelect}
-                selectedTooth={selectedTooth}
+        onToothSelect={handleToothSelect} 
+        selectedTooth={selectedTooth} 
                 conditions={conditions}
                 procedures={procedures}
                 onAddConditionToMultiple={handleAddConditionToMultiple}
@@ -262,7 +262,7 @@ export default function PatientDentalChartPage() {
           </Card>
 
           {/* Selected Tooth Summary */}
-          {selectedTooth && (
+      {selectedTooth && (
             <Card>
               <CardHeader>
                 <CardTitle>
@@ -299,7 +299,7 @@ export default function PatientDentalChartPage() {
                       <p className="text-gray-500">No procedures recorded</p>
                     )}
                   </div>
-                </div>
+        </div>
               </CardContent>
             </Card>
           )}
