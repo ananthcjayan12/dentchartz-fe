@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Search, Plus } from "lucide-react";
+import { User, Search, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination } from "@/components/ui/pagination";
@@ -84,12 +84,20 @@ function PatientsContent() {
           <h1 className="text-3xl font-semibold text-gray-900">Patients</h1>
           <p className="text-gray-500 mt-1">Manage your patient records</p>
         </div>
-        <Button asChild>
-          <Link href="/patients/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Add New Patient
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/patients/import">
+              <Upload className="mr-2 h-4 w-4" />
+              Import CSV
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/patients/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Add New Patient
+            </Link>
+          </Button>
+        </div>
       </div>
       
       <Card>
@@ -121,7 +129,7 @@ function PatientsContent() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Contact</TableHead>
-                    <TableHead>Date of Birth</TableHead>
+                    <TableHead>Age</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -139,7 +147,7 @@ function PatientsContent() {
                           <div className="text-gray-500 text-sm">{patient.email}</div>
                         )}
                       </TableCell>
-                      <TableCell>{patient.date_of_birth}</TableCell>
+                      <TableCell>{patient.age ? `${patient.age} years` : 'N/A'}</TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
                           <Button variant="outline" size="sm" asChild>
