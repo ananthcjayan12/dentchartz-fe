@@ -446,7 +446,7 @@ export function ToothDetailPanel({
           <TabsTrigger value="conditions">Conditions</TabsTrigger>
           <TabsTrigger value="procedures">Procedures</TabsTrigger>
         </TabsList>
-
+        
         <TabsContent value="conditions">
           <div className="space-y-4">
             <div className="flex justify-between items-center">

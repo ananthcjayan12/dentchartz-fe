@@ -92,11 +92,11 @@ function PatientsContent() {
             </Link>
           </Button>
           <Button asChild className="bg-white text-indigo-600 hover:bg-indigo-50">
-            <Link href="/patients/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Add New Patient
-            </Link>
-          </Button>
+          <Link href="/patients/new">
+            <Plus className="mr-2 h-4 w-4" />
+            Add New Patient
+          </Link>
+        </Button>
         </div>
       </div>
       
@@ -125,42 +125,42 @@ function PatientsContent() {
           ) : patients.length > 0 ? (
             <>
               <div className="hidden md:block overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Contact</TableHead>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Contact</TableHead>
                       <TableHead>Age</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {patients.map((patient) => (
-                      <TableRow key={patient.id}>
-                        <TableCell className="font-medium">
-                          {patient.name || `Patient #${patient.id}`}
-                        </TableCell>
-                        <TableCell>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {patients.map((patient) => (
+                    <TableRow key={patient.id}>
+                      <TableCell className="font-medium">
+                        {patient.name || `Patient #${patient.id}`}
+                      </TableCell>
+                      <TableCell>
                           {patient.phone && <div>{patient.phone}</div>}
-                          {patient.email && (
-                            <div className="text-gray-500 text-sm">{patient.email}</div>
-                          )}
-                        </TableCell>
+                        {patient.email && (
+                          <div className="text-gray-500 text-sm">{patient.email}</div>
+                        )}
+                      </TableCell>
                         <TableCell>{patient.age ? `${patient.age} years` : 'N/A'}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button variant="outline" size="sm" asChild>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button variant="outline" size="sm" asChild>
                               <Link href={`/patients/${patient.id}`}>View</Link>
-                            </Button>
-                            <Button variant="outline" size="sm" asChild>
+                          </Button>
+                          <Button variant="outline" size="sm" asChild>
                               <Link href={`/appointments/new?patientId=${patient.id}`}>Schedule</Link>
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
               </div>
               {/* Mobile card list view */}
               <div className="md:hidden grid gap-4">

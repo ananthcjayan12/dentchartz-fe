@@ -284,9 +284,38 @@ export function PatientHistoryBook({ patientId, patientName, toothNumber, select
   };
 
   const createTimeline = (entries: ChartHistoryEntry[]) => {
+    // First, build a lookup of removals so we can hide their corresponding add entries
+    const removalKeys = new Set<string>();
+
+    entries.forEach(e => {
+      if (e.action === 'remove_condition') {
+        const key = `condition_${e.tooth_number}_${e.details?.condition_name}_${e.details?.surface}`;
+        removalKeys.add(key);
+      }
+      if (e.action === 'remove_procedure') {
+        const key = `procedure_${e.tooth_number}_${e.details?.procedure_name}_${e.details?.surface}`;
+        removalKeys.add(key);
+      }
+    });
+
+    // Exclude deletion events themselves AND any add events that have a matching removal
+    const visibleEntries = entries.filter(e => {
+      if (e.action.includes('remove_')) return false; // never show remove rows
+
+      if (e.action === 'add_condition') {
+        const key = `condition_${e.tooth_number}_${e.details?.condition_name}_${e.details?.surface}`;
+        return !removalKeys.has(key);
+      }
+      if (e.action === 'add_procedure') {
+        const key = `procedure_${e.tooth_number}_${e.details?.procedure_name}_${e.details?.surface}`;
+        return !removalKeys.has(key);
+      }
+      return true;
+    });
+
     const grouped: { [key: string]: ChartHistoryEntry[] } = {};
     
-    entries.forEach(entry => {
+    visibleEntries.forEach(entry => {
       // Use the actual date from details (date_detected or date_performed) if available
       let relevantDate = entry.date; // fallback to creation date
       
@@ -569,50 +598,135 @@ export function PatientHistoryBook({ patientId, patientName, toothNumber, select
       
       // Handle bulk operations
       const teethToProcess = isMultipleTeeth ? entry.bulkTeeth! : [entry.tooth_number?.toString()!];
+      console.log("Teeth to process:", teethToProcess);
       let successCount = 0;
       let failureCount = 0;
       
       for (const toothNumber of teethToProcess) {
         try {
-          const tooth = allTeeth.find((t: any) => t.number === toothNumber);
+          console.log(`Processing tooth #${toothNumber}`);
           
-          if (entry.action === 'add_condition' && entry.details?.condition_name) {
-            const condition = tooth?.conditions.find((c: any) => 
-              c.condition_name === entry.details?.condition_name &&
-              c.surface === entry.details?.surface
-            );
+          // Ensure we're comparing strings to strings when finding the tooth
+          const tooth = allTeeth.find((t: any) => t.number.toString() === toothNumber.toString());
+          
+          if (!tooth) {
+            console.error(`Tooth #${toothNumber} not found in dental chart data`);
+            failureCount++;
+            continue;
+          }
+          
+          // Handle conditions
+          if (entry.action.includes('condition')) {
+            console.log(`Looking for conditions on tooth #${toothNumber}`);
+            console.log("Available conditions:", tooth.conditions);
             
-            if (condition) {
-              await dentalChartService.deleteToothCondition(
-                currentClinic.id.toString(),
-                patientId,
-                parseInt(toothNumber),
-                condition.id
-              );
-              successCount++;
+            // If there are no conditions on this tooth, skip it
+            if (!tooth.conditions || tooth.conditions.length === 0) {
+              console.error(`No conditions found on tooth #${toothNumber}`);
+              failureCount++;
+              continue;
+            }
+            
+            // For bulk operations, we'll delete the first condition on the tooth
+            // This is because the history entry might not have the exact condition name
+            // that's currently in the dental chart
+            let conditionToDelete;
+            
+            if (isMultipleTeeth) {
+              // For bulk operations, take the first condition
+              conditionToDelete = tooth.conditions[0];
+              console.log(`Bulk operation: Using first condition on tooth #${toothNumber}: ${conditionToDelete.condition_name}`);
             } else {
+              // For single tooth operations, try to find a matching condition
+              conditionToDelete = tooth.conditions.find((c: any) => 
+                c.condition_name === entry.details?.condition_name &&
+                c.surface === entry.details?.surface
+              );
+              
+              // If no exact match, just take the first condition
+              if (!conditionToDelete && tooth.conditions.length > 0) {
+                conditionToDelete = tooth.conditions[0];
+                console.log(`No exact match found, using first condition: ${conditionToDelete.condition_name}`);
+              }
+            }
+            
+            if (conditionToDelete) {
+              console.log(`Found condition to delete: ${conditionToDelete.condition_name} (ID: ${conditionToDelete.id}) on tooth #${toothNumber}`);
+              
+              try {
+                await dentalChartService.deleteToothCondition(
+                  currentClinic.id.toString(),
+                  patientId,
+                  parseInt(toothNumber),
+                  conditionToDelete.id
+                );
+                console.log(`Successfully deleted condition from tooth #${toothNumber}`);
+                successCount++;
+              } catch (deleteError) {
+                console.error(`Error in API call to delete condition from tooth #${toothNumber}:`, deleteError);
+                failureCount++;
+              }
+            } else {
+              console.error(`No condition found to delete on tooth #${toothNumber}`);
               failureCount++;
             }
-          } else if (entry.action === 'add_procedure' && entry.details?.procedure_name) {
-            const procedure = tooth?.procedures.find((p: any) => 
-              p.procedure_name === entry.details?.procedure_name &&
-              p.surface === entry.details?.surface
-            );
+          } 
+          // Handle procedures
+          else if (entry.action.includes('procedure')) {
+            console.log(`Looking for procedures on tooth #${toothNumber}`);
+            console.log("Available procedures:", tooth.procedures);
             
-            if (procedure) {
-              await dentalChartService.deleteToothProcedure(
-                currentClinic.id.toString(),
-                patientId,
-                toothNumber,
-                procedure.id
-              );
-              successCount++;
+            // If there are no procedures on this tooth, skip it
+            if (!tooth.procedures || tooth.procedures.length === 0) {
+              console.error(`No procedures found on tooth #${toothNumber}`);
+              failureCount++;
+              continue;
+            }
+            
+            // Similar approach for procedures - be more flexible with matching
+            let procedureToDelete;
+            
+            if (isMultipleTeeth) {
+              // For bulk operations, take the first procedure
+              procedureToDelete = tooth.procedures[0];
+              console.log(`Bulk operation: Using first procedure on tooth #${toothNumber}: ${procedureToDelete.procedure_name}`);
             } else {
+              // Try to find a matching procedure
+              procedureToDelete = tooth.procedures.find((p: any) => 
+                p.procedure_name === entry.details?.procedure_name &&
+                p.surface === entry.details?.surface
+              );
+              
+              // If no exact match, just take the first procedure
+              if (!procedureToDelete && tooth.procedures.length > 0) {
+                procedureToDelete = tooth.procedures[0];
+                console.log(`No exact match found, using first procedure: ${procedureToDelete.procedure_name}`);
+              }
+            }
+            
+            if (procedureToDelete) {
+              console.log(`Found procedure to delete: ${procedureToDelete.procedure_name} (ID: ${procedureToDelete.id}) on tooth #${toothNumber}`);
+              
+              try {
+                await dentalChartService.deleteToothProcedure(
+                  currentClinic.id.toString(),
+                  patientId,
+                  toothNumber,
+                  procedureToDelete.id
+                );
+                console.log(`Successfully deleted procedure from tooth #${toothNumber}`);
+                successCount++;
+              } catch (deleteError) {
+                console.error(`Error in API call to delete procedure from tooth #${toothNumber}:`, deleteError);
+                failureCount++;
+              }
+            } else {
+              console.error(`No procedure found to delete on tooth #${toothNumber}`);
               failureCount++;
             }
           }
         } catch (error) {
-          console.error(`Error deleting ${entryType} from tooth ${toothNumber}:`, error);
+          console.error(`Error processing tooth #${toothNumber}:`, error);
           failureCount++;
         }
       }
@@ -636,10 +750,14 @@ export function PatientHistoryBook({ patientId, patientName, toothNumber, select
         toast.error(`No ${entryType} found to delete`);
       }
       
-      // Refresh the history if any deletions were successful
-      if (successCount > 0) {
-        fetchHistory(1);
-      }
+      // Remove the deleted entry from local history so UI updates instantly; useEffect will rebuild filters and timeline
+      setHistory(prev => {
+        const updated = prev.filter(h => h.id !== entry.id);
+        // Update statistics and record count
+        calculateStats(updated);
+        setTotalRecords(updated.length);
+        return updated;
+      });
       
     } catch (error) {
       console.error("Error deleting entry:", error);
