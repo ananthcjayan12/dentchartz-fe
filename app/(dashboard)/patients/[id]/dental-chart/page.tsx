@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { dentalChartService, DentalChart, Tooth, DentalCondition, DentalProcedure } from "@/services/dental-chart.service";
+import { dentalChartService, DentalChart, Tooth, DentalCondition, DentalProcedure, AddToothConditionData } from "@/services/dental-chart.service";
 import { patientService } from "@/services/patient.service";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -96,7 +96,7 @@ export default function PatientDentalChartPage() {
       custom_description?: string;
       surface: string;
       notes?: string;
-      severity?: string;
+      severity?: 'mild' | 'moderate' | 'severe';
     }
   ) => {
     console.log("handleAddCondition called with:", toothNumber, conditionData);
@@ -111,7 +111,7 @@ export default function PatientDentalChartPage() {
       console.log("Making API call to add condition");
       
       // Add dentition_type based on tooth number format
-      const dataWithDentition = {
+      const dataWithDentition: AddToothConditionData = {
         ...conditionData,
         dentition_type: /^[A-Z]$/.test(toothNumber) ? 'primary' : 'permanent'
       };
@@ -125,6 +125,11 @@ export default function PatientDentalChartPage() {
       );
       
       console.log("API call successful, new condition:", newCondition);
+      
+      // If a custom condition was added, refresh the conditions list
+      if (conditionData.custom_name) {
+        await refreshConditions();
+      }
       
       // Instead of manually updating the state, fetch the updated dental chart
       await fetchDentalChart();
@@ -241,6 +246,19 @@ export default function PatientDentalChartPage() {
       toast.error("Failed to load dental chart");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const refreshConditions = async () => {
+    if (!currentClinic?.id) return;
+    
+    try {
+      const conditionsData = await dentalChartService.getDentalConditions(
+        currentClinic.id.toString()
+      );
+      setConditions(conditionsData.results);
+    } catch (error) {
+      console.error("Error refreshing conditions:", error);
     }
   };
 
@@ -415,7 +433,8 @@ export default function PatientDentalChartPage() {
                             conditionData,
                             (completed, total, currentTooth) => {
                               console.log(`Progress: ${completed}/${total} - Processing tooth ${currentTooth.number}`);
-                            }
+                            },
+                            refreshConditions
                           );
 
                           if (result.success.length > 0) {

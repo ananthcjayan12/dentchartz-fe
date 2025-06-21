@@ -26,12 +26,15 @@ export const dentalChartMultiSelectService = {
     clinicId: string,
     patientId: string,
     teeth: Tooth[],
-    conditionData: MultiSelectConditionData
+    conditionData: MultiSelectConditionData,
+    onCustomConditionAdded?: () => void
   ): Promise<{ success: Tooth[]; failed: { tooth: Tooth; error: string }[] }> => {
     const results = {
       success: [] as Tooth[],
       failed: [] as { tooth: Tooth; error: string }[]
     };
+
+    let customConditionAdded = false;
 
     for (const tooth of teeth) {
       try {
@@ -55,12 +58,22 @@ export const dentalChartMultiSelectService = {
         );
 
         results.success.push(tooth);
+
+        // Check if this was a custom condition and mark it
+        if (conditionData.custom_name && !customConditionAdded) {
+          customConditionAdded = true;
+        }
       } catch (error) {
         results.failed.push({
           tooth,
           error: error instanceof Error ? error.message : 'Unknown error'
         });
       }
+    }
+
+    // If a custom condition was added and callback is provided, call it
+    if (customConditionAdded && onCustomConditionAdded) {
+      onCustomConditionAdded();
     }
 
     return results;
@@ -112,12 +125,15 @@ export const dentalChartMultiSelectService = {
     patientId: string,
     teeth: Tooth[],
     conditionData: MultiSelectConditionData,
-    onProgress?: (completed: number, total: number, currentTooth: Tooth) => void
+    onProgress?: (completed: number, total: number, currentTooth: Tooth) => void,
+    onCustomConditionAdded?: () => void
   ): Promise<{ success: Tooth[]; failed: { tooth: Tooth; error: string }[] }> => {
     const results = {
       success: [] as Tooth[],
       failed: [] as { tooth: Tooth; error: string }[]
     };
+
+    let customConditionAdded = false;
 
     for (let i = 0; i < teeth.length; i++) {
       const tooth = teeth[i];
@@ -143,6 +159,11 @@ export const dentalChartMultiSelectService = {
         );
 
         results.success.push(tooth);
+
+        // Check if this was a custom condition and mark it
+        if (conditionData.custom_name && !customConditionAdded) {
+          customConditionAdded = true;
+        }
       } catch (error) {
         results.failed.push({
           tooth,
@@ -154,6 +175,11 @@ export const dentalChartMultiSelectService = {
       if (onProgress) {
         onProgress(i + 1, teeth.length, tooth);
       }
+    }
+
+    // If a custom condition was added and callback is provided, call it
+    if (customConditionAdded && onCustomConditionAdded) {
+      onCustomConditionAdded();
     }
 
     return results;
