@@ -124,7 +124,7 @@ const conditionFormSchema = z.object({
   custom_condition: z.string().optional(),
   custom_code: z.string().optional(),
   custom_description: z.string().optional(),
-  surface: z.string().min(1, "Please select at least one surface"),
+  surface: z.string().optional(),
   notes: z.string().optional(),
   severity: z.string().optional(),
   date_detected: z.date().optional(),
@@ -239,7 +239,7 @@ export function ToothDetailPanel({
     defaultValues: {
       surface: "",
       notes: "",
-      severity: "moderate",
+      severity: "",
       date_detected: new Date(),
     },
   });
@@ -381,7 +381,7 @@ export function ToothDetailPanel({
       surface: procedure.surface,
       notes: procedure.notes,
       date_performed: parseISO(procedure.date_performed),
-      price: typeof procedure.price === 'string' ? parseFloat(procedure.price) : procedure.price,
+      price: procedure.price,
       status: procedure.status,
     });
     setShowAddProcedureDialog(true);
@@ -458,7 +458,7 @@ export function ToothDetailPanel({
                     conditionForm.reset({
                       surface: "",
                       notes: "",
-                      severity: "moderate",
+                      severity: "",
                       date_detected: new Date(),
                     });
                   }}>
@@ -577,7 +577,7 @@ export function ToothDetailPanel({
                         name="surface"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Surface</FormLabel>
+                            <FormLabel>Surface (optional)</FormLabel>
                             <Select
                               onValueChange={field.onChange}
                               defaultValue={field.value}
@@ -588,6 +588,7 @@ export function ToothDetailPanel({
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
+                                <SelectItem value="">None</SelectItem>
                                 <SelectItem value="occlusal">Occlusal (O)</SelectItem>
                                 <SelectItem value="mesial">Mesial (M)</SelectItem>
                                 <SelectItem value="distal">Distal (D)</SelectItem>
@@ -609,7 +610,7 @@ export function ToothDetailPanel({
                         name="severity"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Severity</FormLabel>
+                            <FormLabel>Severity (optional)</FormLabel>
                             <Select
                               onValueChange={field.onChange}
                               defaultValue={field.value}
@@ -620,6 +621,7 @@ export function ToothDetailPanel({
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
+                                <SelectItem value="">None</SelectItem>
                                 <SelectItem value="mild">Mild</SelectItem>
                                 <SelectItem value="moderate">Moderate</SelectItem>
                                 <SelectItem value="severe">Severe</SelectItem>
@@ -957,14 +959,9 @@ export function ToothDetailPanel({
                         name="price"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Price</FormLabel>
+                            <FormLabel>Price (₹)</FormLabel>
                             <FormControl>
-                              <Input
-                                type="number"
-                                placeholder="Enter price"
-                                {...field}
-                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                              />
+                              <Input type="number" placeholder="Enter price" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

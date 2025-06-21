@@ -18,12 +18,15 @@ interface MultiSelectProcedureDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onAddProcedure: (data: {
-    procedure_id: number;
+    procedure_id?: number;
     surface: string;
     notes?: string;
     date_performed: string;
     price?: number;
     status: string;
+    custom_procedure?: string;
+    custom_code?: string;
+    custom_description?: string;
   }) => void;
   selectedTeeth: Tooth[];
   procedures: {
@@ -90,12 +93,12 @@ export function MultiSelectProcedureDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto mx-auto">
         <DialogHeader>
-          <DialogTitle>Add Procedure to Multiple Teeth</DialogTitle>
+          <DialogTitle className="text-lg">Add Procedure to Multiple Teeth</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Selected Teeth Display */}
           <div>
             <Label className="text-sm font-medium">Selected Teeth ({selectedTeeth.length})</Label>
@@ -110,18 +113,18 @@ export function MultiSelectProcedureDialog({
 
           {/* Procedure Selection */}
           <div className="space-y-2">
-            <Label htmlFor="procedure">Procedure</Label>
+            <Label htmlFor="procedure" className="text-sm">Procedure</Label>
             <Select value={selectedProcedure} onValueChange={setSelectedProcedure}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a procedure" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-[200px] overflow-y-auto">
                 {procedures.map(procedure => (
                   <SelectItem key={procedure.id} value={procedure.id.toString()}>
-                    <div className="flex flex-col">
-                      <span>{procedure.name} ({procedure.code})</span>
+                    <div className="flex flex-col w-full">
+                      <span className="text-sm">{procedure.name} ({procedure.code})</span>
                       <span className="text-xs text-gray-500">
-                        {procedure.category} - ${procedure.default_price}
+                        {procedure.category} - ₹{procedure.default_price}
                       </span>
                     </div>
                   </SelectItem>
@@ -132,9 +135,9 @@ export function MultiSelectProcedureDialog({
 
           {/* Surface Selection */}
           <div className="space-y-2">
-            <Label htmlFor="surface">Surface</Label>
+            <Label htmlFor="surface" className="text-sm">Surface</Label>
             <Select value={surface} onValueChange={setSurface}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -152,9 +155,9 @@ export function MultiSelectProcedureDialog({
 
           {/* Status Selection */}
           <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
+            <Label htmlFor="status" className="text-sm">Status</Label>
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -167,18 +170,18 @@ export function MultiSelectProcedureDialog({
 
           {/* Date Selection */}
           <div className="space-y-2">
-            <Label>Date</Label>
+            <Label className="text-sm">Date</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full justify-start text-left font-normal"
+                  className="w-full justify-start text-left font-normal text-sm"
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {date ? format(date, "PPP") : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
+              <PopoverContent className="w-auto p-0" align="center">
                 <Calendar
                   mode="single"
                   selected={date}
@@ -191,8 +194,8 @@ export function MultiSelectProcedureDialog({
 
           {/* Price Input */}
           <div className="space-y-2">
-            <Label htmlFor="price">
-              Price (Default: ${selectedProc?.default_price || 0})
+            <Label htmlFor="price" className="text-sm">
+              Price (Default: ₹{selectedProc?.default_price || 0})
             </Label>
             <Input
               id="price"
@@ -201,32 +204,34 @@ export function MultiSelectProcedureDialog({
               placeholder={`${selectedProc?.default_price || 0}`}
               value={price}
               onChange={(e) => setPrice(e.target.value)}
+              className="w-full"
             />
           </div>
 
           {/* Notes */}
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes (Optional)</Label>
+            <Label htmlFor="notes" className="text-sm">Notes (Optional)</Label>
             <Textarea
               id="notes"
               placeholder="Add any additional notes..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              rows={3}
+              rows={2}
+              className="w-full resize-none"
             />
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>
+        <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+          <Button variant="outline" onClick={handleClose} className="w-full sm:w-auto">
             Cancel
           </Button>
           <Button 
             onClick={handleSubmit} 
             disabled={!selectedProcedure}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
           >
-            Add Procedure to {selectedTeeth.length} Teeth
+            Add to {selectedTeeth.length} Teeth
           </Button>
         </DialogFooter>
       </DialogContent>
