@@ -23,7 +23,7 @@ interface MultiSelectConditionDialogProps {
     notes?: string;
     severity?: string;
     date_detected?: string;
-    custom_condition?: string;
+    custom_name?: string;
     custom_code?: string;
     custom_description?: string;
   }) => void;
@@ -62,7 +62,7 @@ export function MultiSelectConditionDialog({
         notes: notes || undefined,
         severity,
         date_detected: format(date, "yyyy-MM-dd"),
-        custom_condition: customConditionName,
+        custom_name: customConditionName,
         custom_code: customConditionCode,
         custom_description: customConditionDescription
       });

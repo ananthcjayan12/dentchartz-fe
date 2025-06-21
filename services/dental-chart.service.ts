@@ -105,7 +105,10 @@ export interface ProceduresResponse {
 }
 
 export interface AddToothConditionData {
-  condition_id: number;
+  condition_id?: number;
+  custom_name?: string;
+  custom_code?: string;
+  custom_description?: string;
   surface: string;
   notes?: string;
   severity?: 'mild' | 'moderate' | 'severe';

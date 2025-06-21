@@ -1,7 +1,10 @@
 import { dentalChartService, Tooth, AddToothConditionData } from "./dental-chart.service";
 
 export interface MultiSelectConditionData {
-  condition_id: number;
+  condition_id?: number;
+  custom_name?: string;
+  custom_code?: string;
+  custom_description?: string;
   surface: string;
   notes?: string;
   severity?: 'mild' | 'moderate' | 'severe';
@@ -34,6 +37,9 @@ export const dentalChartMultiSelectService = {
       try {
         const addConditionData: AddToothConditionData = {
           condition_id: conditionData.condition_id,
+          custom_name: conditionData.custom_name,
+          custom_code: conditionData.custom_code,
+          custom_description: conditionData.custom_description,
           surface: conditionData.surface,
           notes: conditionData.notes,
           severity: conditionData.severity,
@@ -119,6 +125,9 @@ export const dentalChartMultiSelectService = {
       try {
         const addConditionData: AddToothConditionData = {
           condition_id: conditionData.condition_id,
+          custom_name: conditionData.custom_name,
+          custom_code: conditionData.custom_code,
+          custom_description: conditionData.custom_description,
           surface: conditionData.surface,
           notes: conditionData.notes,
           severity: conditionData.severity,
